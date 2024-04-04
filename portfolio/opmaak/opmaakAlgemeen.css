@@ -1,0 +1,327 @@
+* {
+   font-family: "Roboto";
+}
+
+body {
+   background-color: black;
+   color: white;
+}
+
+button {
+   border-radius: 25%;
+}
+
+footer {
+   /* background-color: #b37c39; */
+   color: white;
+   font-weight: 500;
+}
+
+/* strong {
+    color: #b57a21; 
+} */
+
+
+
+/* Navbar */
+nav div li {
+   transition: 0.3s;
+}
+
+nav div li:hover {
+   transform: translateY(-5px);
+}
+
+nav {
+   font-style: italic;
+}
+
+/* Headers */
+h1 {
+   margin-top: 10px;
+   text-align: center;
+   font-family: "dancing Script", 'Courier New', Courier, monospace;
+   font-size: 45px;
+   border-bottom: 1px solid white;
+}
+
+/* PaginaSecties */
+/* Sectie 1 */
+#cards {
+   margin-left: 13%;
+}
+
+/* Sectie 2 */
+/* #Schoolcarrière {
+   padding: 25px;
+} */
+
+/* Algemene opmaakcodes */
+.centreren {
+   text-align: center;
+}
+
+.onderstrepen {
+   text-decoration: underline;
+}
+
+
+
+
+
+/* Grid */
+#GridSchoolrooster {
+   display: grid;
+   grid-template-columns: repeat(6, 1fr);
+   grid-template-rows: repeat(9, 1fr);
+   font-size: 15px;
+
+   grid-template-areas:
+      "Jaar1-Sem1 Jaar1-Sem2 Jaar2-Sem1 Jaar2-Sem2 Jaar3-Sem1 Jaar3-Sem2"
+      "CS Business AdvancedSD1 AdvancedSD2 BusinessAnaly Bachelorproef"
+      "Databases Communication CCSA DataAI DevOps Career"
+      "Cybersecurity CompNetworks Costing EntrepriseWebDev EntrepriseC Stage"
+      "OOSD1 OOSD2 Functional IT2Business Android Leeg6"
+      "IT Operating FrondEnd Methods ModernData Leeg7"
+      "SoftwareAnalasis Web2 ProfCom ITProf Leeg3 Leeg8"
+      "Web1 SDP1 Databases2 SDP2 Leeg4 Leeg9"
+      "Leeg1 SEL1 WebSer Leeg2 Leeg5 Leeg10";
+}
+
+#GridSchoolrooster>div {
+   border: 1px solid black;
+   padding: 2px;
+   text-align: center;
+}
+
+#GridSchoolrooster>div:nth-of-type(even) {
+   background-color: #adadad;
+}
+
+#GridSchoolrooster>div:nth-of-type(odd) {
+   background-color: #6e6e6e;
+}
+
+/* Jaren */
+#Jaar_1_-_Semester_1 {
+   grid-area: Jaar1-Sem1;
+}
+
+#Jaar_1_-_Semester_2 {
+   grid-area: Jaar1-Sem2;
+}
+
+#Jaar_2_-_Semester_1 {
+   grid-area: Jaar2-Sem1;
+}
+
+#Jaar_2_-_Semester_2 {
+   grid-area: Jaar2-Sem2;
+}
+
+#Jaar_3_-_Semester_1 {
+   grid-area: Jaar3-Sem1;
+}
+
+#Jaar_3_-_Semester_2 {
+   grid-area: Jaar3-Sem2;
+}
+
+/* Vakken jaar 1 semester 2*/
+#ComputerSystems {
+   grid-area: CS;
+}
+
+#Databases {
+   grid-area: Databases;
+}
+
+#Cybersecurity {
+   grid-area: Cybersecurity;
+}
+
+#OOSD1 {
+   grid-area: OOSD1;
+}
+
+#IT {
+   grid-area: IT;
+}
+
+#SoftwareAnalasis {
+   grid-area: SoftwareAnalasis;
+}
+
+#Web1 {
+   grid-area: Web1;
+}
+
+#Leeg1 {
+   grid-area: Leeg1;
+}
+
+/* jaar 1 - semester 2  */
+#Business {
+   grid-area: Business;
+}
+
+#Communication {
+   grid-area: Communication;
+}
+
+#CompNetworks {
+   grid-area: CompNetworks;
+}
+
+#Operating {
+   grid-area: Operating;
+}
+
+#OOSD2 {
+   grid-area: OOSD2;
+}
+
+#Web2 {
+   grid-area: Web2;
+}
+
+#SDP1 {
+   grid-area: SDP1;
+}
+
+#SEL1 {
+   grid-area: SEL1;
+}
+
+/* Vakken jaar 2 semester 1*/
+#AdvancedSD1 {
+   grid-area: AdvancedSD1;
+}
+
+#CCSA {
+   grid-area: CCSA;
+}
+
+#Costing {
+   grid-area: Costing;
+}
+
+#Functional {
+   grid-area: Functional;
+}
+
+#FrondEnd {
+   grid-area: FrondEnd;
+}
+
+#ProfCom {
+   grid-area: ProfCom;
+}
+
+#Databases2 {
+   grid-area: Databases2;
+}
+
+#WebSer {
+   grid-area: WebSer;
+}
+
+/* Vakken jaar 2 semester 2*/
+#AdvancedSD2 {
+   grid-area: AdvancedSD2;
+}
+
+#DataAI {
+   grid-area: DataAI;
+}
+
+#EntrepriseWebDev {
+   grid-area: EntrepriseWebDev;
+}
+
+#ITProf {
+   grid-area: ITProf;
+}
+
+#Methods {
+   grid-area: Methods;
+}
+
+#IT2Business {
+   grid-area: IT2Business;
+}
+
+#SDP2 {
+   grid-area: SDP2;
+}
+
+#Leeg2 {
+   grid-area: Leeg2;
+}
+
+
+/* Vakken jaar 3 - Semester 1 */
+#BusinessAnaly {
+   grid-area: BusinessAnaly;
+}
+
+#DevOps {
+   grid-area: DevOps;
+}
+
+#EntrepriseC {
+   grid-area: EntrepriseC;
+}
+
+#Android {
+   grid-area: Android;
+}
+
+#ModernData {
+   grid-area: ModernData;
+}
+
+#Leeg3 {
+   grid-area: Leeg3;
+}
+
+#Leeg4 {
+   grid-area: Leeg4;
+}
+
+#Leeg5 {
+   grid-area: Leeg5;
+}
+
+/* Vakken jaar 3 - Semester 2 */
+#Bachelorproef {
+   grid-area: Bachelorproef;
+}
+
+#Career {
+   grid-area: Career;
+}
+
+#Stage {
+   grid-area: Stage;
+}
+
+#Leeg6 {
+   grid-area: Leeg6;
+}
+
+#Leeg7 {
+   grid-area: Leeg7;
+}
+
+#Leeg8 {
+   grid-area: Leeg8;
+}
+
+#Leeg9 {
+   grid-area: Leeg9;
+}
+
+#Leeg10 {
+   grid-area: Leeg10;
+}
