@@ -1,2 +1,3 @@
 # robbe04.github.com
-Een portfolio van Robbe Magerman
+Indien je dit ziet en je wil mijn **portfolio** bezoeken, typ dan: **_/portfolio/_** in de URL
+ 
