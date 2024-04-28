@@ -28,7 +28,8 @@ export default class LabelKlickerComponent {
 
   // Logica van de methoden in de constructor
   #telOp() {
-    document.getElementById("add").addEventListener("click", () => {
+    const clickEvent = 'ontouchstart' in window ? 'touchstart' : 'click';
+    document.getElementById("add").addEventListener(clickEvent, () => {
       this.#labelKlicker.som++; 
       this.#labelKlicker.aantal++;
       document.getElementById("Nummer").textContent = `${this.#labelKlicker.som}`;
