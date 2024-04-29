@@ -1,0 +1,121 @@
+body {
+   background-color: rgb(55, 54, 54);
+   border: 1px solid white;
+   background-image: url(./img/achtergrond.jpg);
+   background-position: left;
+}
+
+div {
+   text-align: center;
+}
+
+strong {
+   color: white;
+}
+
+a {
+   color: white;
+}
+
+
+/* Div in getal */
+#DivNummer {
+   font-size: 96px;
+}
+
+/* Getal */
+#DivNummer #Nummer {
+   color: white;
+}
+
+
+/* Klickerbutton */
+#DivBanaan button {
+   border-radius: 10px;
+   margin-bottom: 5px;
+}
+
+#DivBanaan button:hover {
+   cursor: pointer;
+}
+
+/* Tekstbox van de gebruiker */
+#DivGebruiker {
+   color: white;
+   font-size: 40px;
+}
+
+#DivGebruiker #Gebruiker {
+   color: white;
+   font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+   font-size: 40px;
+   font-weight: 900;
+}
+
+/* Stopknop */
+#DivStop #Stop {
+   margin-top: 10px;
+   padding: 15px;
+   border-radius: 100%;
+   background-color: brown;
+   color: white;
+   text-align: center;
+   justify-content: center;
+   align-items: center;
+   cursor: pointer;
+}
+
+#DivAantalKeerGeklikt {
+   color: white;
+   font-size: 25px;
+}
+
+#DivStop #Stop:hover {
+   background-color: rgb(182, 135, 6);
+   cursor: pointer;
+}
+
+#DivFarms {
+   color: white;
+   font-size: 50px;
+}
+
+.scoreUpdate {
+   font-size: 50px;
+   color: white;
+}
+
+
+@media screen and (max-width: 500px) {
+   body {
+      background-position: end;
+   }
+}
+
+
+/* Spawnen van minibanaantjes */
+#DivBanaan img {
+   transition: all 0.5s ease;
+}
+
+#DivBanaan img:hover {
+   transform: scale(1.1);
+   /* Vergroot de foto met 10% */
+}
+
+@keyframes flyOut {
+   0% {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+   }
+
+   100% {
+      opacity: 0;
+      transform: translateY(-200px) rotate(360deg);
+   }
+}
+
+.mini-banaan {
+   position: absolute;
+   animation: flyOut 1s ease;
+}

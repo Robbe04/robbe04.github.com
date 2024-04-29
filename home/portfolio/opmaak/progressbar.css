@@ -1,0 +1,22 @@
+/* Progressbar */
+#scroll-progress {
+   position: fixed;
+   top: 0;
+   width: 0%;
+   height: 8px;
+   background: blue;
+   z-index: 1;
+}
+
+.opmaak {
+   width: 250px;
+   height: 350px;
+}
+
+.lijntje {
+   border-bottom: 12px;
+}
+
+.blauw {
+   color: blue;
+}
