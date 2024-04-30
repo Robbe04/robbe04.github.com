@@ -1,0 +1,52 @@
+#titel {
+   margin-top: 25px;
+   font-family: 'Bungee Spice';
+   text-align: center;
+   font-size: 75px;
+   padding: 5px;
+   border: rgb(226, 112, 26) solid 1px;
+   margin-left: 250px;
+   margin-right: 250px;
+   font-style: italic;
+   background-color: rgb(250, 237, 237);
+   text-shadow: 3px 3px black;
+}
+
+#storyPartOne {
+   text-align: center;
+}
+
+#storyPartOneText {
+   margin-top: 86px;
+}
+
+#storyPartTwo {
+   text-align: center;
+}
+
+#storyPartTwoText {
+   margin-top: 124px;
+}
+
+#StoryPartThree {
+   text-align: center;
+   margin-bottom: 25px;
+}
+
+#StoryPartThreeText {
+   margin-top: 50px;
+   font-size: 20px;
+   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+#FIGHT {
+   padding: 25px;
+   background-color: red;
+   color: white;
+   width: 70%;
+}
+
+#FIGHT a {
+   color: white;
+   text-decoration: none;
+}
