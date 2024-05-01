@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="opmaak/fight.css" />
+    <link rel="stylesheet" href="opmaak/algemeen.css" />
+    <title>Revenge of the knight - Fight</title>
+  </head>
+  <body>
+    <audio autoplay loop controls>
+      <source
+        src="audio/Epic Medieval Battle Music_ Valiant Warriors of our Lands by RageSound (Copyright Free Music).mp3"
+        type="audio/mp3"
+      />
+    </audio>
+
+    <section id="sectionSpeler">
+      <nav>
+        <ul>
+          <li><a href="../index.html">Back to hub</a></li>
+          <li><a href="spelregels.html">Spelregels</a></li>
+          <li><a href="index.html">Verhaallijn</a></li>
+        </ul>
+      </nav>
+      <br /><br /><br /><br />
+
+      <!-- Display voor hartjes -->
+      <div>
+        <img class="leven" src="img/leven.jpg" alt="" />
+        <img class="leven" src="img/leven.jpg" alt="" />
+        <img class="leven" src="img/leven.jpg" alt="" />
+        <img class="leven" src="img/leven.jpg" alt="" />
+        <img class="leven" src="img/leven.jpg" alt="" />
+      </div>
+
+      <!-- Spelersprite -->
+      <div id="damageToHades"></div>
+      <div><img src="img/player.jpg" alt="" /></div>
+
+      <!-- Buttons om aan te vallen -->
+      <div>
+        <button class="valAan" type="button">
+          <a id="valAan">Val aan</a>
+        </button>
+        <button>Verdedig</button>
+        <button>Inventory</button>
+      </div>
+
+      <br /><br /><br /><br />
+      <br /><br /><br /><br />
+    </section>
+
+    <section id="sectionEnemy">
+      <br /><br /><br /><br />
+      <br /><br /><br /><br />
+      <br /><br /><br /><br />
+      <div><img class="outline" src="img/enemy.jpg" alt="" /></div>
+      <br /><br /><br /><br />
+      <br /><br /><br /><br />
+      <br /><br /><br /><br />
+    </section>
+
+    <script type="module" src="./js/index.js"></script>
+  </body>
+</html>
