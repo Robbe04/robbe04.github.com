@@ -1,6 +1,6 @@
 # [robbe04.github.com](https://robbe04.github.io/home/)
 [Home](https://robbe04.github.io/home)  
-[Github Portfolio](https://robbe04.github.io/portfolio)  
-[Banana Clicker](https://robbe04.github.io/portfolio)  
-[Revenge Of The Knight](https://robbe04.github.io/fight) (in development)!
+[Github Portfolio](https://robbe04.github.io/home/portfolio)  
+[Banana Clicker](https://robbe04.github.io/home/bananaclicker)  
+[Revenge Of The Knight](https://robbe04.github.io/home/fight) (in development)!
 
