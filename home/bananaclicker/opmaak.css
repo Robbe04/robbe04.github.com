@@ -98,10 +98,10 @@ a {
    transition: all 0.5s ease;
 }
 
-/* #DivBanaan img:hover {
+#DivBanaan img:hover {
    transform: scale(1.1);
    /* Vergroot de foto met 10% */
-} */
+} 
 
 @keyframes flyOut {
    0% {
