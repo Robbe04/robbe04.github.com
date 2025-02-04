@@ -9,12 +9,14 @@
   {
     "id": 2,
     "naam": "Music Library",
+    "url": "https//robbe04.github.io/#",
     "thumbnail": "./img/",
     "beschrijving": "I also like music so I decided I wanted to build my own music app. But I had no permission to put this project online."
   },
   {
     "id": 3,
     "naam": "King Domino",
+    "url": "https//robbe04.github.io/#",
     "thumbnail": "./img/kingdomino.png",
     "beschrijving": "My first group project 5 where we rebuilt the game: Kingdomino (Java - MySQL)"
   }
