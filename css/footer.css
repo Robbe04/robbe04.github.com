@@ -1,0 +1,37 @@
+footer {
+   padding: 20px;
+   background-color: #333;
+   color: #fff;
+   text-align: center;
+   font-family: Arial, sans-serif;
+}
+
+footer #socials {
+   display: flex;
+   justify-content: center;
+   /* Center the icons horizontally */
+   margin: 20px 0 0;
+   padding: 0;
+   list-style: none;
+}
+
+footer #socials li {
+   margin: 0 10px;
+   /* Space between icons */
+}
+
+footer #socials li a {
+   color: #fff;
+   text-decoration: none;
+   font-size: 24px;
+   transition: color 0.3s ease;
+}
+
+footer #socials li a:hover {
+   color: #007bff;
+   /* Default hover color */
+}
+
+footer #socials li a i {
+   vertical-align: middle;
+}
