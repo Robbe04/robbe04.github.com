@@ -93,16 +93,25 @@ body {
 }
 
 #container #kolom1 #pros #languages li:nth-of-type(3) i {
-   color: rgb(243, 186, 16);
+   color: rgb(243, 186, 16) !important;
 }
 
 #container #kolom1 #pros #languages li:nth-of-type(4) i {
-   color: var(--oranje);
+   color: var(--oranje) !important;
 }
 
 #container #kolom1 #pros #languages li:nth-of-type(5) i {
+   color: rgb(107, 188, 77);
+}
+
+#container #kolom1 #pros #languages li:nth-of-type(6) i {
+   color: rgb(158, 17, 130);
+}
+
+#container #kolom1 #pros #languages li:nth-of-type(7) i {
    color: var(--zwart);
 }
+
 
 #container #kolom2 img {
    border-radius: 10px;
