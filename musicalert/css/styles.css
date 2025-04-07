@@ -1,0 +1,386 @@
+/**
+ * MusicAlert Styles
+ */
+
+/* Tab styling */
+.tab-active {
+    border-bottom: 2px solid #6C4AE6;
+    font-weight: 600;
+}
+
+/* Card hover effects */
+.album-card, .artist-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.album-card:hover, .artist-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Audio visualizer animation */
+@keyframes equalizer {
+    0% { height: 5px; }
+    50% { height: 25px; }
+    100% { height: 5px; }
+}
+
+.audio-bar {
+    animation: equalizer 1s ease-in-out infinite;
+    animation-play-state: paused;
+}
+
+.playing .audio-bar {
+    animation-play-state: running;
+}
+
+/* Misc animations */
+.hover-scale {
+    transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* Scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #6C4AE6;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #5438C8;
+}
+
+/* Loading animation */
+.loading-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #6C4AE6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Utility classes */
+.text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.backdrop-blur {
+    backdrop-filter: blur(8px);
+}
+
+/* Search suggestions styling */
+#artistSuggestions {
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+.artist-suggestion {
+    transition: background-color 0.15s ease;
+}
+
+.artist-suggestion:last-child {
+    border-bottom: none;
+}
+
+.artist-suggestion:hover {
+    background-color: #f3f4f6;
+}
+
+/* Improve scrollbars in suggestion dropdown */
+#artistSuggestions::-webkit-scrollbar {
+    width: 6px;
+}
+
+#artistSuggestions::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+#artistSuggestions::-webkit-scrollbar-track {
+    background-color: #f1f5f9;
+}
+
+/* Search loading indicator */
+#searchLoadingIndicator {
+    color: #6C4AE6;
+    opacity: 0.8;
+}
+
+/* New release badge */
+.new-release-badge {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: rgb(6, 95, 70);
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* New releases columns */
+.releases-column {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem;
+}
+
+/* Toast notifications */
+#toast {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+/* PWA install button */
+#install-app {
+    transition: all 0.3s ease;
+}
+
+/* Notification toggle styles */
+#notification-toggle {
+    transition: all 0.3s ease;
+}
+
+#notification-toggle:hover {
+    transform: scale(1.05);
+}
+
+/* Pre-search genre filter panel */
+#pre-search-genres {
+    scrollbar-width: thin;
+}
+
+#pre-search-genres::-webkit-scrollbar {
+    width: 4px;
+}
+
+#pre-search-genres::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#pre-search-genres::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
+}
+
+#pre-search-genres input[type="checkbox"] {
+    accent-color: #6C4AE6;
+}
+
+/* Genre filter count badge */
+#genre-filter-count {
+    font-size: 0.65rem;
+    min-width: 18px;
+    height: 18px;
+}
+
+/* Filter and Sort Controls */
+#favorites-filter-container,
+#notifications-filter-container {
+    transition: all 0.3s ease;
+}
+
+#favorites-search,
+#notifications-search {
+    transition: border-color 0.2s ease;
+}
+
+#favorites-sort,
+#notifications-sort {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+    padding-right: 2rem;
+}
+
+/* Days ago badge for releases */
+.days-ago-badge {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* Collaboration tag styling */
+.collaboration-tag {
+    font-size: 0.65rem;
+    line-height: 1.2;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Dark mode settings */
+:root {
+    --background-color: #f9fafb;
+    --text-color: #111827;
+    --card-bg: #ffffff;
+    --card-border: #e5e7eb;
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+}
+
+.dark {
+    --background-color: #1f2937;
+    --text-color: #f9fafb;
+    --card-bg: #111827;
+    --card-border: #374151;
+    --input-bg: #1f2937;
+    --input-border: #4b5563;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root.system-theme {
+        --background-color: #1f2937;
+        --text-color: #f9fafb;
+        --card-bg: #111827;
+        --card-border: #374151;
+        --input-bg: #1f2937;
+        --input-border: #4b5563;
+    }
+}
+
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.bg-white {
+    background-color: var(--card-bg);
+}
+
+/* File Upload Styles */
+#import-file {
+    cursor: pointer;
+}
+
+/* Accessibility focus styles */
+button:focus-visible, 
+a:focus-visible, 
+input:focus-visible, 
+select:focus-visible {
+    outline: 2px solid #6C4AE6;
+    outline-offset: 2px;
+}
+
+/* Better scrollbar for theme */
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+/* Better contrast in dark mode */
+.dark .text-gray-600 {
+    color: #9ca3af;
+}
+
+.dark .border-gray-200 {
+    border-color: var(--card-border);
+}
+
+.dark .bg-gray-50 {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .bg-gray-100 {
+    background-color: var(--background-color);
+}
+
+.dark .bg-gray-200 {
+    background-color: #374151;
+}
+
+.dark .text-gray-800 {
+    color: #e5e7eb;
+}
+
+/* Input color management */
+.dark input, 
+.dark select, 
+.dark textarea {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--input-border);
+}
+
+/* Mobile fab improvements */
+.mobile-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    font-size: 1.25rem;
+}
+
+/* Offline indicator */
+.offline-indicator {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    background-color: #dc2626;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    z-index: 50;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(100px);
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.offline-indicator.visible {
+    transform: translateY(0);
+}
+
+.offline-indicator i {
+    margin-right: 8px;
+}
+
+/* Related artists horizontal scroll */
+.related-artists-scroll {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.related-artists-scroll::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for Chrome/Safari/Opera */
+}
+
+.related-artists-scroll > div {
+    transition: transform 0.3s ease;
+}
+
+.related-artists-scroll > div:hover {
+    transform: translateY(-5px);
+}
