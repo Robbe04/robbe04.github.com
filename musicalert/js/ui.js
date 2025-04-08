@@ -495,7 +495,7 @@ class UIService {
                     <div class="text-gray-400 mb-4">
                         <i class="fas fa-bell text-5xl"></i>
                     </div>
-                    <p class="text-gray-500">Geen nieuwe releases (< 7 dagen) gevonden van je gevolgde DJ's</p>
+                    <p class="text-gray-500">Geen nieuwe releases (< ${app.releaseAgeDays || 7} dagen) gevonden van je gevolgde DJ's</p>
                     <p class="text-gray-500 text-sm mt-2">We laten het je weten wanneer er nieuwe muziek uitkomt</p>
                 </div>
             `;
@@ -685,6 +685,49 @@ class UIService {
                 debounceTimer = setTimeout(() => {
                     app.checkNewReleases();
                 }, 300);
+            });
+        }
+        
+        // Initialize release age setting
+        this.initializeReleaseAgeSetting();
+    }
+
+    /**
+     * Initialize release age setting
+     */
+    initializeReleaseAgeSetting() {
+        const releaseAgeInput = document.getElementById('release-age');
+        const releaseAgeApplyBtn = document.getElementById('release-age-apply');
+        
+        if (releaseAgeInput && releaseAgeApplyBtn) {
+            // Set initial value from app settings
+            releaseAgeInput.value = app.releaseAgeDays;
+            
+            // Apply button click handler
+            releaseAgeApplyBtn.addEventListener('click', () => {
+                const days = parseInt(releaseAgeInput.value);
+                app.setReleaseAgeDays(days);
+            });
+            
+            // Also apply when pressing Enter in the input
+            releaseAgeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const days = parseInt(releaseAgeInput.value);
+                    app.setReleaseAgeDays(days);
+                }
+            });
+            
+            // Validate input on blur (when leaving the field)
+            releaseAgeInput.addEventListener('blur', () => {
+                let days = parseInt(releaseAgeInput.value);
+                
+                if (isNaN(days) || days < 1) {
+                    days = 7; // Reset to default
+                } else if (days > 14) {
+                    days = 14; // Cap at 14
+                }
+                
+                releaseAgeInput.value = days;
             });
         }
     }

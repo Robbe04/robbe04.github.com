@@ -291,6 +291,28 @@
                                     </select>
                                 </div>
                             </div>
+                            
+                            <!-- Release Age Setting -->
+                            <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                                <label for="release-age" class="text-sm text-gray-600 whitespace-nowrap">Toon releases van de afgelopen:</label>
+                                <div class="relative w-16">
+                                    <input 
+                                        type="number" 
+                                        id="release-age" 
+                                        min="1" 
+                                        max="14" 
+                                        value="7"
+                                        class="w-full pl-2 pr-2 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                    >
+                                </div>
+                                <span class="text-sm text-gray-600">dagen</span>
+                                <button 
+                                    id="release-age-apply" 
+                                    class="ml-auto bg-primary hover:bg-primary-dark text-white text-sm px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                    Toepassen
+                                </button>
+                            </div>
                         </div>
                         
                         <div id="notifications" class="space-y-3 md:space-y-4"></div>

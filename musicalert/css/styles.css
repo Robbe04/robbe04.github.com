@@ -384,3 +384,37 @@ select:focus-visible {
 .related-artists-scroll > div:hover {
     transform: translateY(-5px);
 }
+
+/* Mobile button adjustments */
+@media (max-width: 640px) {
+    /* Smaller button text and padding on mobile */
+    #favorites .artist-card button,
+    #notifications button,
+    #notifications a {
+        font-size: 0.75rem; /* 12px */
+        padding: 0.375rem 0.5rem; /* 6px 8px */
+    }
+    
+    /* Just show icon for share buttons on very small screens */
+    @media (max-width: 360px) {
+        #favorites .artist-card button:last-child span,
+        #notifications button:last-child span {
+            display: none;
+        }
+    }
+    
+    /* Release age input group responsive layout */
+    #notifications-filter-container .flex.items-center {
+        flex-wrap: wrap;
+    }
+    
+    #release-age {
+        width: 3rem;
+        text-align: center;
+    }
+    
+    #release-age-apply {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+}

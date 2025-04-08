@@ -8,6 +8,7 @@ class MusicAlertApp {
         this.lastSearchResults = [];
         this.notificationsEnabled = false;
         this.exportImportModalOpen = false;
+        this.releaseAgeDays = parseInt(localStorage.getItem('releaseAgeDays')) || 7; // Default to 7 days
     }
     
     /**
@@ -203,7 +204,12 @@ class MusicAlertApp {
         }
         
         try {
-            const newReleases = await api.checkNewReleases(this.favorites);
+            if (!background) {
+                ui.showLoading('Nieuwe releases controleren...');
+            }
+            
+            // Pass the releaseAgeDays parameter to the API call
+            const newReleases = await api.checkNewReleases(this.favorites, this.releaseAgeDays);
             
             // If this is a background check and we have new releases, send notifications
             if (background && newReleases.length > 0 && this.notificationsEnabled) {
@@ -212,11 +218,17 @@ class MusicAlertApp {
             
             // Only update UI if not a background check
             if (!background) {
+                console.log(`Displaying ${newReleases.length} new releases in the UI`);
                 ui.displayNotifications(newReleases);
+                ui.hideLoading();
             }
             
             return newReleases;
         } catch (error) {
+            if (!background) {
+                ui.hideLoading();
+                ui.showError('Er is een fout opgetreden bij het controleren op nieuwe releases.');
+            }
             console.error('Error checking new releases:', error);
             return [];
         }
@@ -660,6 +672,28 @@ class MusicAlertApp {
                 this.getLatestTracks(id);
             }
         }
+    }
+
+    /**
+     * Set the number of days to consider a release as "new"
+     * @param {number} days - Number of days (1-14)
+     */
+    setReleaseAgeDays(days) {
+        // Validate the input
+        days = parseInt(days);
+        if (isNaN(days) || days < 1) {
+            days = 7; // Default to 7 if invalid
+        } else if (days > 14) {
+            days = 14; // Cap at 14 days
+        }
+        
+        this.releaseAgeDays = days;
+        localStorage.setItem('releaseAgeDays', days.toString());
+        
+        // Refresh notifications with new setting
+        this.checkNewReleases();
+        
+        ui.showMessage(`Je ziet nu releases van de afgelopen ${days} dagen`, 'success');
     }
 }
 

@@ -276,18 +276,18 @@ class SpotifyApiService {
 
     /**
      * Check for new releases from favorite artists
+     * @param {Array} favorites - List of favorite artists
+     * @param {number} days - Number of days to look back (default: 7)
      */
-    async checkNewReleases(favorites) {
+    async checkNewReleases(favorites, days = 7) {
         try {
             if (!favorites.length) return [];
             
             const headers = await this.getHeaders();
-            const lastCheck = parseInt(localStorage.getItem('lastReleaseCheck') || '0');
             const now = Date.now();
-            localStorage.setItem('lastReleaseCheck', now.toString());
             
-            // Look back 7 days (in milliseconds)
-            const lookBackPeriod = 7 * 24 * 60 * 60 * 1000;
+            // Look back X days (in milliseconds) based on parameter
+            const lookBackPeriod = days * 24 * 60 * 60 * 1000;
             
             let newReleases = [];
             let processedAlbumIds = new Set(); // Track album IDs to prevent duplicates
@@ -301,11 +301,12 @@ class SpotifyApiService {
                 
                 if (data.error) continue;
                 
-                // Find albums released since last check
+                // Find albums released within the specified period
                 const artistNewReleases = data.items.filter(album => {
                     const releaseDate = new Date(album.release_date).getTime();
-                    // Check if album is recent and not already processed
-                    return releaseDate > lastCheck - lookBackPeriod && !processedAlbumIds.has(album.id);
+                    const ageInMs = now - releaseDate;
+                    // Check if album is within specified period and not already processed
+                    return ageInMs <= lookBackPeriod && !processedAlbumIds.has(album.id);
                 });
                 
                 for (const album of artistNewReleases) {
