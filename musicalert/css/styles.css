@@ -506,3 +506,52 @@ select:focus-visible {
         width: 100%;
     }
 }
+
+/* Audio Preview Player */
+#preview-player-container {
+    transform: translateY(100%);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+    border-top: 1px solid #e5e7eb;
+}
+
+#preview-player-container.translate-y-0 {
+    transform: translateY(0);
+}
+
+#preview-player-container.translate-y-full {
+    transform: translateY(100%);
+}
+
+/* Audio Visualizer */
+.audio-visualizer {
+    display: flex;
+    align-items: flex-end;
+    height: 30px;
+    gap: 2px;
+}
+
+.audio-bar {
+    width: 3px;
+    background-color: #6C4AE6;
+    transition: height 0.1s ease;
+}
+
+/* Preview button hover effect */
+.preview-play-btn:hover {
+    transform: scale(1.1);
+}
+
+/* For track listings */
+.track-item {
+    transition: background-color 0.2s ease;
+}
+
+.track-item:hover {
+    background-color: rgba(108, 74, 230, 0.05);
+}
+
+/* Progress bar click area */
+#preview-progress-container {
+    cursor: pointer;
+    position: relative;
+}

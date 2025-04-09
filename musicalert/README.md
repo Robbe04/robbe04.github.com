@@ -9,6 +9,8 @@ MusicAlert is een geavanceerde web applicatie waarmee gebruikers hun favoriete D
 - **Uitgebreide DJ/Artiest Zoekfunctie**: Zoek naar artiesten en filter op genre
 - **Favorieten Beheren**: Voeg artiesten toe aan je volglijst en sla deze lokaal op
 - **Nieuwe Release Meldingen**: Ontvang meldingen wanneer gevolgde artiesten nieuwe muziek uitbrengen
+- **Aankomende Releases**: Bekijk pre-releases die binnenkort uitkomen van je favoriete artiesten
+- **Track Aanbevelingen**: Krijg muziekaanbevelingen gebaseerd op je voorkeuren
 - **Muziek Previews**: Luister naar previews van nummers direct in de app
 - **Interactieve Audio Visualizer**: Visuele weergave van afgespeelde muziek
 - **Aanbevelingen**: Krijg aanbevelingen voor nieuwe artiesten gebaseerd op je voorkeuren
@@ -26,6 +28,7 @@ MusicAlert is een geavanceerde web applicatie waarmee gebruikers hun favoriete D
 2. Klik op "Create an App"
 3. Vul een naam en beschrijving in voor je app
 4. Kopieer de "Client ID" en "Client Secret" en update deze in het bestand `js/api.js`
+5. Stel in de Spotify Developer Dashboard de Redirect URI in op `http://localhost:8000/callback.html` (voor lokaal testen)
 
 **Opmerking**: Deze app gebruikt de Client Credentials Flow voor authenticatie bij de Spotify API. In productie-omgevingen zou de Client Secret niet in frontend code moeten worden opgeslagen. Overweeg voor een productieoplossing het gebruik van een backend service die de API-aanroepen afhandelt.
 

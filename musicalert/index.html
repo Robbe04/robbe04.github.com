@@ -125,6 +125,46 @@
                 box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             }
         }
+
+        /* Audio Preview Player Styles */
+        #preview-player-container {
+            transform: translateY(100%);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+            border-top: 1px solid #e5e7eb;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        #preview-player-container.translate-y-0 {
+            transform: translateY(0);
+        }
+
+        #preview-player-container.translate-y-full {
+            transform: translateY(100%);
+        }
+
+        .audio-visualizer {
+            display: flex;
+            align-items: flex-end;
+            height: 30px;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .audio-bar {
+            width: 3px;
+            background-color: #6C4AE6;
+            transition: height 0.1s ease;
+            border-radius: 1px;
+        }
+        
+        /* Track item hover effect */
+        .track-item {
+            transition: background-color 0.2s ease;
+        }
+        
+        .track-item:hover {
+            background-color: rgba(108, 74, 230, 0.05);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -222,6 +262,14 @@
                         class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
                         <i class="fas fa-bell mr-2"></i>Nieuwe Releases
                     </button>
+                    <button id="tab-pre-releases" onclick="app.switchTab('pre-releases')" 
+                        class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
+                        <i class="fas fa-hourglass-half mr-2"></i>Aankomende Releases
+                    </button>
+                    <button id="tab-events" onclick="app.showEventsPanel()" 
+                        class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
+                        <i class="fas fa-calendar-alt mr-2"></i>Evenementen
+                    </button>
                     <button id="tab-recommendations" onclick="app.switchTab('recommendations')" 
                         class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
                         <i class="fas fa-magic mr-2"></i>Aanbevelingen
@@ -318,10 +366,56 @@
                         <div id="notifications" class="space-y-3 md:space-y-4"></div>
                     </div>
                     
+                    <!-- Pre-Releases Section (New) -->
+                    <div id="pre-releases-content" class="tab-content hidden">
+                        <h3 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-primary">Aankomende Releases</h3>
+                        <p class="text-sm md:text-base text-gray-600 mb-4">Releases die binnenkort uitkomen van jouw gevolgde DJ's</p>
+                        
+                        <!-- Pre-Releases Filter Controls -->
+                        <div id="pre-releases-filter-container" class="mb-6 bg-gray-50 p-3 rounded-lg">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <div class="flex-1 relative">
+                                    <input 
+                                        type="text" 
+                                        id="pre-releases-search" 
+                                        placeholder="Zoek aankomende releases..." 
+                                        class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                    >
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <label for="pre-releases-sort" class="text-sm text-gray-600 whitespace-nowrap">Sorteren op:</label>
+                                    <select 
+                                        id="pre-releases-sort" 
+                                        class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                                    >
+                                        <option value="date-asc">Binnenkort eerst</option>
+                                        <option value="date-desc">Later eerst</option>
+                                        <option value="artist-asc">Artiest (A-Z)</option>
+                                        <option value="artist-desc">Artiest (Z-A)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="pre-releases" class="space-y-3 md:space-y-4"></div>
+                    </div>
+                    
                     <!-- Recommendations Section -->
                     <div id="recommendations-content" class="tab-content hidden">
                         <h3 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-primary">Aanbevolen Voor Jou</h3>
                         <p class="text-sm md:text-base text-gray-600 mb-4">Gebaseerd op jouw gevolgde artiesten</p>
+                        
+                        <!-- Track Recommendations (New) -->
+                        <h4 class="font-semibold text-lg mb-3 flex items-center">
+                            <i class="fas fa-music mr-2 text-secondary"></i>Aanbevolen Tracks
+                        </h4>
+                        <div id="track-recommendations" class="mb-8"></div>
+                        
+                        <!-- Artist Recommendations (Existing) -->
+                        <h4 class="font-semibold text-lg mb-3 flex items-center mt-6">
+                            <i class="fas fa-users mr-2 text-secondary"></i>Aanbevolen Artiesten
+                        </h4>
                         <div id="recommendations" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6"></div>
                     </div>
                 </div>
@@ -647,12 +741,43 @@
             </div>
             
             <div class="p-5">
+                <!-- Event Filter Controls -->
+                <div class="mb-4 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+                    <div class="relative w-full sm:w-64">
+                        <input 
+                            type="text" 
+                            id="event-search" 
+                            placeholder="Zoek evenementen..." 
+                            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                        >
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                    <div class="w-full sm:w-auto flex space-x-2">
+                        <select 
+                            id="event-filter" 
+                            class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                        >
+                            <option value="">Alle types</option>
+                            <option value="festival">Festivals</option>
+                            <option value="club">Clubnachten</option>
+                            <option value="concert">Concerten</option>
+                            <option value="live stream">Live Streams</option>
+                        </select>
+                        <button 
+                            id="refresh-events" 
+                            class="bg-primary hover:bg-primary-dark text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                        >
+                            <i class="fas fa-sync-alt mr-1"></i>Vernieuwen
+                        </button>
+                    </div>
+                </div>
+                
                 <div id="events-loading" class="text-center py-6">
                     <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
                     <p>Evenementen laden...</p>
                 </div>
                 
-                <div id="events-list" class="hidden">
+                <div id="events-list" class="hidden max-h-96 overflow-y-auto">
                     <!-- Event items will be added here -->
                 </div>
                 
@@ -841,10 +966,74 @@
             
             // Load events for all favorite artists
             loadUpcomingEvents();
+            
+            // Setup search and filter functionality
+            setupEventFilters();
         }
         
         function hideEventsPanel() {
             document.getElementById('events-panel').classList.add('hidden');
+        }
+        
+        function setupEventFilters() {
+            const searchInput = document.getElementById('event-search');
+            const filterSelect = document.getElementById('event-filter');
+            const refreshButton = document.getElementById('refresh-events');
+            
+            // Live search functionality
+            searchInput.addEventListener('input', function() {
+                const keyword = this.value.trim();
+                filterEvents(keyword, filterSelect.value);
+            });
+            
+            // Type filter
+            filterSelect.addEventListener('change', function() {
+                filterEvents(searchInput.value.trim(), this.value);
+            });
+            
+            // Refresh button
+            refreshButton.addEventListener('click', function() {
+                // Clear cached events
+                eventsManager.eventsCache.clear();
+                
+                // Reload events
+                loadUpcomingEvents();
+            });
+        }
+        
+        function filterEvents(keyword, eventType) {
+            // Get all event elements
+            const allEvents = Array.from(document.querySelectorAll('.event-item'));
+            
+            if (!keyword && !eventType) {
+                // Show all events
+                allEvents.forEach(event => event.classList.remove('hidden'));
+                return;
+            }
+            
+            allEvents.forEach(event => {
+                const eventData = event.dataset;
+                const matchesType = !eventType || eventData.type === eventType;
+                const matchesKeyword = !keyword || 
+                    eventData.name.toLowerCase().includes(keyword.toLowerCase()) ||
+                    eventData.artist.toLowerCase().includes(keyword.toLowerCase()) ||
+                    eventData.location.toLowerCase().includes(keyword.toLowerCase());
+                
+                if (matchesType && matchesKeyword) {
+                    event.classList.remove('hidden');
+                } else {
+                    event.classList.add('hidden');
+                }
+            });
+            
+            // Check if no events are visible
+            const visibleEvents = allEvents.filter(event => !event.classList.contains('hidden'));
+            
+            if (visibleEvents.length === 0) {
+                document.getElementById('no-events').classList.remove('hidden');
+            } else {
+                document.getElementById('no-events').classList.add('hidden');
+            }
         }
         
         async function loadUpcomingEvents() {
@@ -861,19 +1050,17 @@
                 // Get events from the events manager
                 const events = await eventsManager.getUpcomingEvents(favoriteArtists);
                 
-                setTimeout(() => {
-                    // Hide loading indicator
-                    document.getElementById('events-loading').classList.add('hidden');
-                    
-                    if (events.length === 0) {
-                        // No events found
-                        document.getElementById('no-events').classList.remove('hidden');
-                    } else {
-                        // Display events
-                        displayEvents(events);
-                        document.getElementById('events-list').classList.remove('hidden');
-                    }
-                }, 1000); // Simulate loading time
+                // Hide loading indicator
+                document.getElementById('events-loading').classList.add('hidden');
+                
+                if (!events || events.length === 0) {
+                    // No events found
+                    document.getElementById('no-events').classList.remove('hidden');
+                } else {
+                    // Display events
+                    displayEvents(events);
+                    document.getElementById('events-list').classList.remove('hidden');
+                }
             } catch (error) {
                 console.error('Error loading events:', error);
                 document.getElementById('events-loading').classList.add('hidden');
@@ -898,36 +1085,58 @@
                 });
                 
                 const eventElement = document.createElement('div');
-                eventElement.className = 'bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md mb-4';
+                eventElement.className = 'event-item bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md mb-4';
+                
+                // Add data attributes for filtering
+                eventElement.dataset.type = event.type;
+                eventElement.dataset.name = event.name;
+                eventElement.dataset.artist = event.artistName;
+                eventElement.dataset.location = `${event.location.name} ${event.location.city}`;
+                
+                // Create a tag for the event type
+                const eventTypeTag = getEventTypeTag(event.type);
+                
+                // Create a tag for ticket status
+                const ticketStatusTag = getTicketStatusTag(event.ticketStatus);
+                
                 eventElement.innerHTML = `
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h5 class="font-bold">${event.name}</h5>
-                            <p class="text-primary dark:text-primary-light text-sm">${event.artistName}</p>
-                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                                <i class="fas fa-map-marker-alt mr-1"></i> 
-                                ${event.location.name}, ${event.location.city}
-                            </p>
-                        </div>
-                        <div class="text-right">
-                            <div class="bg-secondary bg-opacity-20 dark:bg-opacity-30 text-secondary-dark dark:text-secondary-light px-2 py-1 rounded-full text-sm">
-                                ${formattedDate}
+                    <div class="flex">
+                        <div class="flex-shrink-0 mr-4 hidden sm:block">
+                            <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
+                                <img src="${event.image || 'img/placeholder-dj.jpg'}" alt="${event.artistName}" class="w-full h-full object-cover">
                             </div>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${getRelativeTime(eventDate)}</p>
                         </div>
-                    </div>
-                    <div class="mt-3 flex justify-between items-center">
-                        <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-600 rounded-full">
-                            ${event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-                        </span>
-                        ${event.ticketStatus === 'on sale' ? 
-                            `<a href="${event.ticketUrl}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition">
-                                <i class="fas fa-ticket-alt mr-1"></i>Tickets
-                            </a>` : 
-                            `<span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-600 rounded-full">
-                                ${event.ticketStatus === 'sold out' ? 'Uitverkocht' : event.ticketStatus === 'soon' ? 'Binnenkort' : 'Pre-sale'}
-                            </span>`
-                        }
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <h5 class="font-bold">${event.name}</h5>
+                                    <p class="text-primary dark:text-primary-light text-sm">${event.artistName}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                        <i class="fas fa-map-marker-alt mr-1"></i> 
+                                        ${event.location.name}, ${event.location.city}
+                                    </p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="bg-secondary bg-opacity-20 dark:bg-opacity-30 text-secondary-dark dark:text-secondary-light px-2 py-1 rounded-full text-sm">
+                                        ${formattedDate}
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${getRelativeTime(eventDate)}</p>
+                                </div>
+                            </div>
+                            <div class="mt-3 flex justify-between items-center">
+                                <span class="text-xs px-2 py-1 ${eventTypeTag.bgColor} rounded-full">
+                                    ${eventTypeTag.label}
+                                </span>
+                                ${event.ticketStatus === 'on sale' ? 
+                                    `<a href="${event.ticketUrl}" target="_blank" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg text-sm transition">
+                                        <i class="fas fa-ticket-alt mr-1"></i>Tickets
+                                    </a>` : 
+                                    `<span class="text-xs px-2 py-1 ${ticketStatusTag.bgColor} rounded-full">
+                                        ${ticketStatusTag.label}
+                                    </span>`
+                                }
+                            </div>
+                        </div>
                     </div>
                 `;
                 
@@ -935,151 +1144,78 @@
             });
         }
         
-        // Offline panel functions
-        function showOfflinePanel() {
-            const panel = document.getElementById('offline-panel');
-            const tracksList = document.getElementById('offline-tracks-list');
-            const noTracks = document.getElementById('no-offline-tracks');
-            const loadingIndicator = document.getElementById('offline-loading');
-            
-            // Show panel
-            panel.classList.remove('hidden');
-            
-            // Show loading indicator
-            loadingIndicator.classList.remove('hidden');
-            tracksList.classList.add('hidden');
-            noTracks.classList.add('hidden');
-            
-            // Load offline tracks
-            loadOfflineTracks();
+        function getEventTypeTag(type) {
+            switch(type) {
+                case 'festival':
+                    return { label: 'Festival', bgColor: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' };
+                case 'club':
+                    return { label: 'Club', bgColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' };
+                case 'concert':
+                    return { label: 'Concert', bgColor: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' };
+                case 'live stream':
+                    return { label: 'Live Stream', bgColor: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' };
+                default:
+                    return { label: type.charAt(0).toUpperCase() + type.slice(1), bgColor: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
+            }
         }
         
-        function hideOfflinePanel() {
-            document.getElementById('offline-panel').classList.add('hidden');
+        function getTicketStatusTag(status) {
+            switch(status) {
+                case 'sold out':
+                    return { label: 'Uitverkocht', bgColor: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' };
+                case 'soon':
+                    return { label: 'Binnenkort', bgColor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' };
+                case 'pre-sale':
+                    return { label: 'Pre-sale', bgColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' };
+                default:
+                    return { label: status, bgColor: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
+            }
         }
         
-        function loadOfflineTracks() {
-            try {
-                const offlineTracks = audioEnhancer.offlineTracks;
-                
-                // Update storage usage display
-                const storageUsage = audioEnhancer.getOfflineStorageSize();
-                const storageUsageMB = (storageUsage / (1024 * 1024)).toFixed(2);
-                document.getElementById('offline-storage-usage').textContent = `${storageUsageMB} MB gebruikt`;
-                
-                setTimeout(() => {
-                    // Hide loading indicator
-                    document.getElementById('offline-loading').classList.add('hidden');
+        // ...existing code...
+    </script>
+
+    <!-- Add initialization for audio preview functionality -->
+    <script>
+        // Initialize click handlers for any track preview buttons
+        document.addEventListener('click', function(e) {
+            // Check if clicked element is a preview button or has a parent that is
+            const previewButton = e.target.closest('.preview-play-btn');
+            
+            if (previewButton) {
+                // Preview button handling is managed by the event listeners added in UI service
+                // This is just to ensure we have global event delegation if needed
+            }
+        });
+        
+        // Global key shortcuts for preview player
+        document.addEventListener('keydown', function(e) {
+            const previewPlayer = document.getElementById('preview-player');
+            
+            if (previewPlayer) {
+                // Space bar to play/pause
+                if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault(); // Prevent page scrolling
                     
-                    if (!offlineTracks || offlineTracks.length === 0) {
-                        // No offline tracks found
-                        document.getElementById('no-offline-tracks').classList.remove('hidden');
+                    if (previewPlayer.paused) {
+                        previewPlayer.play();
+                        document.getElementById('preview-play-pause').innerHTML = '<i class="fas fa-pause"></i>';
                     } else {
-                        // Display offline tracks
-                        displayOfflineTracks(offlineTracks);
-                        document.getElementById('offline-tracks-list').classList.remove('hidden');
-                    }
-                }, 1000); // Simulate loading time
-            } catch (error) {
-                console.error('Error loading offline tracks:', error);
-                document.getElementById('offline-loading').classList.add('hidden');
-                document.getElementById('no-offline-tracks').classList.remove('hidden');
-            }
-        }
-        
-        function displayOfflineTracks(tracks) {
-            const tracksList = document.getElementById('offline-tracks-list');
-            tracksList.innerHTML = '';
-            
-            // Sort tracks by saved date (newest first)
-            tracks.sort((a, b) => b.savedAt - a.savedAt);
-            
-            tracks.forEach(track => {
-                const trackElement = document.createElement('div');
-                trackElement.className = 'flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800';
-                
-                const trackSize = (track.size / (1024 * 1024)).toFixed(2); // Convert to MB
-                const savedDate = new Date(track.savedAt).toLocaleDateString('nl-NL');
-                
-                trackElement.innerHTML = `
-                    <div class="flex-1">
-                        <p class="font-medium">${track.metadata.trackName || 'Onbekend nummer'}</p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">${track.metadata.artistName || 'Onbekende artiest'} • ${track.metadata.albumName || ''}</p>
-                        <div class="flex items-center mt-1">
-                            <span class="text-xs text-gray-500 dark:text-gray-400">Opgeslagen: ${savedDate}</span>
-                            <span class="text-xs bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full ml-2">${trackSize} MB</span>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0 ml-4">
-                        <button onclick="playOfflineTrack('${track.id}')" class="p-2 text-primary hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition mr-1">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button onclick="removeOfflineTrack('${track.id}')" class="p-2 text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                `;
-                
-                tracksList.appendChild(trackElement);
-            });
-        }
-        
-        function playOfflineTrack(trackId) {
-            try {
-                const track = audioEnhancer.getOfflineTrack(trackId);
-                if (track) {
-                    ui.showMessage(`Nu afspelen: ${track.metadata.trackName || 'Onbekend nummer'}`, 'success');
-                    // In a real app, you would create an audio element and play the track
-                }
-            } catch (error) {
-                console.error('Error playing offline track:', error);
-                ui.showMessage('Kan track niet afspelen', 'error');
-            }
-        }
-        
-        function removeOfflineTrack(trackId) {
-            try {
-                if (confirm('Weet je zeker dat je deze track wilt verwijderen uit de offline opslag?')) {
-                    const result = audioEnhancer.removeOfflineTrack(trackId);
-                    if (result) {
-                        loadOfflineTracks(); // Refresh the list
-                        ui.showMessage('Track verwijderd uit offline opslag', 'success');
-                    } else {
-                        ui.showMessage('Kan track niet verwijderen', 'error');
+                        previewPlayer.pause();
+                        document.getElementById('preview-play-pause').innerHTML = '<i class="fas fa-play"></i>';
                     }
                 }
-            } catch (error) {
-                console.error('Error removing offline track:', error);
-                ui.showMessage('Fout bij verwijderen track', 'error');
+                
+                // Escape key to close player
+                if (e.code === 'Escape') {
+                    ui.stopCurrentPreview();
+                }
             }
-        }
-        
-        // Playlists panel functions
-        function showPlaylistsPanel() {
-            const panel = document.getElementById('playlists-panel');
-            const playlistsList = document.getElementById('playlists-list');
-            const noPlaylists = document.getElementById('no-playlists');
-            const loadingIndicator = document.getElementById('playlists-loading');
-            
-            // Show panel
-            panel.classList.remove('hidden');
-            
-            // Show loading indicator
-            loadingIndicator.classList.remove('hidden');
-            playlistsList.classList.add('hidden');
-            noPlaylists.classList.add('hidden');
-            
-            // Load playlists
-            loadPlaylists();
-            
-            // Setup create button
-            document.getElementById('create-playlist-btn').addEventListener('click', showCreatePlaylistForm);
-        }
-        
-        function hidePlaylistsPanel() {
-            document.getElementById('playlists-panel').classList.add('hidden');
-        }
-        
+        });
+    </script>
+    
+    <!-- Functions for playlist handling -->
+    <script>
         function loadPlaylists() {
             try {
                 const sharedPlaylists = socialSharing.sharedPlaylists;
@@ -1232,8 +1368,10 @@
             // This would be implemented in a real app
             ui.showMessage('Playlist maken is nog niet geïmplementeerd', 'info');
         }
-        
-        // Sound enhancer functions
+    </script>
+    
+    <!-- Sound enhancer functions -->
+    <script>
         function updateVolume(value) {
             try {
                 const volume = parseInt(value) / 100; // Convert to 0-1 range
@@ -1293,6 +1431,20 @@
                 return `Over ${months} ${months === 1 ? 'maand' : 'maanden'}`;
             }
         }
+    </script>
+    
+    <!-- Initialize audio preview functionality -->
+    <script>
+        // Initialize click handlers for any track preview buttons
+        document.addEventListener('click', function(e) {
+            // Check if clicked element is a preview button or has a parent that is
+            const previewButton = e.target.closest('.preview-play-btn');
+            
+            if (previewButton) {
+                // Preview button handling is managed by the event listeners added in UI service
+                // This is just to ensure we have global event delegation if needed
+            }
+        });
     </script>
 </body>
 </html>

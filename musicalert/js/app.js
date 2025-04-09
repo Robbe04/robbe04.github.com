@@ -85,6 +85,8 @@ class MusicAlertApp {
         // Load recommendations based on favorites
         if (this.favorites.length) {
             this.loadRecommendations();
+            this.loadTrackRecommendations();
+            this.loadPreReleases();
         }
         
         // Setup offline detection
@@ -234,6 +236,9 @@ class MusicAlertApp {
             // Display the results
             ui.displayLatestTracks(artist, albums, relatedArtists);
             
+            // Add preview functionality to all track items
+            this.setupTrackPreviewButtons();
+            
             // Scroll to results
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
@@ -287,13 +292,18 @@ class MusicAlertApp {
         // Check for new releases if we added an artist
         if (existingIndex < 0) {
             this.checkNewReleases();
+            
+            // Clear events cache for this artist to refresh events
+            if (window.eventsManager) {
+                eventsManager.eventsCache.delete(artistId);
+            }
         }
         
         // Update recommendations
         this.loadRecommendations();
     }
 
-    /**
+    /** 
      * Display favorites
      */
     displayFavorites() {
@@ -340,7 +350,7 @@ class MusicAlertApp {
             return [];
         }
     }
-    
+
     /**
      * Send notifications for new releases
      */
@@ -379,7 +389,7 @@ class MusicAlertApp {
             }
         }
     }
-    
+
     /**
      * Toggle push notifications
      */
@@ -429,7 +439,46 @@ class MusicAlertApp {
     }
 
     /**
-     * Switch between tabs (favorites, notifications, recommendations)
+     * Load pre-releases for favorite artists
+     */
+    async loadPreReleases() {
+        if (!this.favorites.length) {
+            ui.displayPreReleases([]);
+            return;
+        }
+        
+        try {
+            ui.showLoading('Aankomende releases laden...');
+            const preReleases = await api.getPreReleases(this.favorites);
+            ui.displayPreReleases(preReleases);
+            ui.hideLoading();
+        } catch (error) {
+            ui.hideLoading();
+            console.error('Error loading pre-releases:', error);
+            ui.showError('Er is een fout opgetreden bij het laden van aankomende releases.');
+        }
+    }
+
+    /**
+     * Load track recommendations based on favorites
+     */
+    async loadTrackRecommendations() {
+        if (!this.favorites.length) {
+            ui.displayTrackRecommendations([]);
+            return;
+        }
+        
+        try {
+            const artistIds = this.favorites.map(fav => fav.id);
+            const recommendedTracks = await api.getTrackRecommendations(artistIds, 12);
+            ui.displayTrackRecommendations(recommendedTracks);
+        } catch (error) {
+            console.error('Error loading track recommendations:', error);
+        }
+    }
+
+    /**
+     * Switch between tabs (favorites, notifications, pre-releases, recommendations)
      */
     switchTab(tab) {
         // Update tab buttons
@@ -439,8 +488,15 @@ class MusicAlertApp {
         document.getElementById('tab-notifications').classList.remove('tab-active', 'text-primary');
         document.getElementById('tab-notifications').classList.add('text-gray-500');
         
+        document.getElementById('tab-pre-releases').classList.remove('tab-active', 'text-primary');
+        document.getElementById('tab-pre-releases').classList.add('text-gray-500');
+        
         document.getElementById('tab-recommendations').classList.remove('tab-active', 'text-primary');
         document.getElementById('tab-recommendations').classList.add('text-gray-500');
+        
+        // Handle events tab separately as it opens a modal
+        document.getElementById('tab-events').classList.remove('tab-active', 'text-primary');
+        document.getElementById('tab-events').classList.add('text-gray-500');
         
         document.getElementById(`tab-${tab}`).classList.add('tab-active', 'text-primary');
         document.getElementById(`tab-${tab}`).classList.remove('text-gray-500');
@@ -448,9 +504,30 @@ class MusicAlertApp {
         // Show/hide content
         document.getElementById('favorites-content').classList.add('hidden');
         document.getElementById('notifications-content').classList.add('hidden');
+        document.getElementById('pre-releases-content').classList.add('hidden');
         document.getElementById('recommendations-content').classList.add('hidden');
         
         document.getElementById(`${tab}-content`).classList.remove('hidden');
+        
+        // Load tab-specific content if needed
+        if (tab === 'events') {
+            this.showEventsPanel();
+        } else if (tab === 'pre-releases' && document.getElementById('pre-releases').children.length === 0) {
+            this.loadPreReleases();
+        } else if (tab === 'recommendations' && document.getElementById('recommendations').children.length === 0) {
+            this.loadTrackRecommendations();
+            this.loadRecommendations(); // Also load artist recommendations
+        }
+    }
+    
+    /**
+     * Show the events panel
+     */
+    showEventsPanel() {
+        // If the showEventsPanel function exists in the global scope, call it
+        if (typeof window.showEventsPanel === 'function') {
+            window.showEventsPanel();
+        }
     }
 
     /**
@@ -607,7 +684,7 @@ class MusicAlertApp {
             window.location.reload();
         }
     }
-    
+
     /**
      * Track listening event for statistics
      */
@@ -656,7 +733,7 @@ class MusicAlertApp {
         const playCounts = JSON.parse(localStorage.getItem('artistPlayCounts') || '{}');
         const listeningHistory = JSON.parse(localStorage.getItem('listeningHistory') || '[]');
         
-        // Get top artists by play count
+        // Get top artists by play count 
         const topArtists = Object.entries(playCounts)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5)
@@ -668,8 +745,8 @@ class MusicAlertApp {
                     count
                 };
             });
-            
-        // Get recent listening activity
+        
+        // Get recent listening activity 
         const recentActivity = listeningHistory
             .slice(-10)
             .reverse()
@@ -682,7 +759,7 @@ class MusicAlertApp {
                     timestamp: entry.timestamp
                 };
             });
-            
+        
         // Calculate total listening count
         const totalPlays = Object.values(playCounts).reduce((sum, count) => sum + count, 0);
         
@@ -701,7 +778,7 @@ class MusicAlertApp {
         ui.displayStatsModal(stats);
         this.statsModalOpen = true;
     }
-
+    
     /**
      * Share an artist with friends
      */
@@ -772,16 +849,16 @@ class MusicAlertApp {
             const shareType = urlParams.get('share');
             const id = urlParams.get('id');
             
+            // Clean URL without removing page history
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Get artist details and show them
             if (shareType === 'artist') {
-                // Clean URL without removing page history
-                window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // Get artist details and show them
                 this.getLatestTracks(id);
             }
         }
     }
-
+    
     /**
      * Set the number of days to consider a release as "new"
      * @param {number} days - Number of days (1-14)
@@ -802,6 +879,72 @@ class MusicAlertApp {
         this.checkNewReleases();
         
         ui.showMessage(`Je ziet nu releases van de afgelopen ${days} dagen`, 'success');
+    }
+
+    /**
+     * Play preview of a track
+     * @param {string} previewUrl - URL of the preview audio
+     * @param {Object} track - Track data object
+     */
+    playPreview(previewUrl, track) {
+        if (!previewUrl) {
+            ui.showMessage('Geen preview beschikbaar voor dit nummer', 'info');
+            return;
+        }
+        
+        ui.createPreviewPlayer(track);
+        
+        // Track this listening event for statistics if it's not already tracked
+        if (track.id && track.artists && track.artists[0]) {
+            this.trackListening(
+                track.artists[0].id,
+                track.id,
+                track.name,
+                track.album?.name || 'Onbekend album'
+            );
+        }
+    }
+    
+    /**
+     * Setup track preview buttons after displaying tracks
+     */
+    setupTrackPreviewButtons() {
+        // Select all preview buttons that don't already have event listeners
+        const previewButtons = document.querySelectorAll('.preview-play-btn:not([data-initialized])');
+        
+        previewButtons.forEach(button => {
+            // Mark as initialized to avoid duplicate event listeners
+            button.setAttribute('data-initialized', 'true');
+            
+            // Add click event
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                const previewUrl = button.dataset.previewUrl;
+                const trackId = button.dataset.trackId;
+                const trackName = button.dataset.trackName;
+                const artistName = button.dataset.artistName;
+                const artistId = button.dataset.artistId;
+                const albumName = button.dataset.albumName;
+                const albumId = button.dataset.albumId;
+                const albumImage = button.dataset.albumImage;
+                
+                // Create track object to pass to the preview player
+                const track = {
+                    id: trackId,
+                    name: trackName,
+                    preview_url: previewUrl,
+                    artists: [{ id: artistId, name: artistName }],
+                    album: {
+                        id: albumId,
+                        name: albumName,
+                        images: [{ url: albumImage }]
+                    }
+                };
+                
+                this.playPreview(previewUrl, track);
+            });
+        });
     }
 }
 

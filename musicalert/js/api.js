@@ -366,6 +366,141 @@ class SpotifyApiService {
             return [];
         }
     }
+
+    /**
+     * Get upcoming pre-releases that are not yet released
+     * @param {Array} favorites - List of favorite artists
+     * @param {number} limit - Maximum number of pre-releases to fetch
+     */
+    async getPreReleases(favorites, limit = 10) {
+        try {
+            if (!favorites.length) return [];
+            
+            const headers = await this.getHeaders();
+            let preReleases = [];
+            const now = new Date();
+            const processedAlbumIds = new Set(); // Track album IDs to prevent duplicates
+            
+            // Get artist IDs from favorites
+            const artistIds = favorites.map(artist => artist.id);
+            
+            // Use the Browse API to check for pre-releases
+            const response = await fetch(`https://api.spotify.com/v1/browse/new-releases?limit=50&country=NL`, {
+                headers
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(`API error: ${data.error.message}`);
+            }
+            
+            // Filter for upcoming releases from favorite artists
+            for (const album of data.albums.items) {
+                // Check if any artist from this album is in favorites
+                const matchingArtist = album.artists.find(artist => artistIds.includes(artist.id));
+                
+                if (matchingArtist && !processedAlbumIds.has(album.id)) {
+                    // Add to processed IDs to prevent duplicates
+                    processedAlbumIds.add(album.id);
+                    
+                    // Get the full artist object from favorites
+                    const favoriteArtist = favorites.find(fav => fav.id === matchingArtist.id);
+                    
+                    preReleases.push({
+                        artist: favoriteArtist,
+                        album: album,
+                        releaseDate: new Date(album.release_date),
+                        isPreRelease: new Date(album.release_date) > now
+                    });
+                }
+            }
+            
+            // Filter to only include pre-releases
+            preReleases = preReleases.filter(release => release.isPreRelease);
+            
+            // Sort by release date (closest first)
+            preReleases.sort((a, b) => a.releaseDate - b.releaseDate);
+            
+            // Get detailed information for each pre-release
+            const detailedReleases = await Promise.all(
+                preReleases.slice(0, limit).map(async (release) => {
+                    try {
+                        // Get full album details
+                        const albumResponse = await fetch(`https://api.spotify.com/v1/albums/${release.album.id}`, { headers });
+                        const fullAlbum = await albumResponse.json();
+                        
+                        if (fullAlbum.error) return release;
+                        
+                        return {
+                            ...release,
+                            album: fullAlbum
+                        };
+                    } catch (error) {
+                        console.error('Error fetching album details:', error);
+                        return release;
+                    }
+                })
+            );
+            
+            return detailedReleases;
+        } catch (error) {
+            console.error('Error fetching pre-releases:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get track recommendations based on favorite artists
+     * @param {Array} artistIds - Array of artist IDs
+     * @param {number} limit - Maximum number of tracks to recommend
+     */
+    async getTrackRecommendations(artistIds, limit = 10) {
+        try {
+            if (!artistIds.length) return [];
+            
+            ui.showLoading('Aanbevelingen laden...');
+            
+            const headers = await this.getHeaders();
+            // Use up to 5 seed artists
+            const seedArtists = artistIds.slice(0, 5).join(',');
+            
+            const response = await fetch(`https://api.spotify.com/v1/recommendations?seed_artists=${seedArtists}&limit=${limit}&market=NL`, {
+                headers
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(`API error: ${data.error.message}`);
+            }
+            
+            // Get full track details with audio features
+            const tracksWithAudioFeatures = await Promise.all(
+                data.tracks.map(async (track) => {
+                    try {
+                        const audioFeaturesResponse = await fetch(`https://api.spotify.com/v1/audio-features/${track.id}`, { headers });
+                        const audioFeatures = await audioFeaturesResponse.json();
+                        
+                        return {
+                            ...track,
+                            audioFeatures: audioFeatures
+                        };
+                    } catch (error) {
+                        console.error('Error fetching audio features:', error);
+                        return track;
+                    }
+                })
+            );
+            
+            ui.hideLoading();
+            return tracksWithAudioFeatures;
+        } catch (error) {
+            ui.hideLoading();
+            console.error('Error fetching track recommendations:', error);
+            return [];
+        }
+    }
 }
 
 // Initialize API service
