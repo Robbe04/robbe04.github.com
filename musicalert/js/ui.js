@@ -446,6 +446,9 @@ class UIService {
             html += `
                 <div class="artist-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col animate__animated animate__fadeIn">
                     <div class="h-40 bg-gray-200 overflow-hidden relative">
+                        <div class="is-favorite">
+                            <i class="fas fa-heart"></i> Gevolgd
+                        </div>
                         ${artist.img ? 
                             `<img src="${artist.img}" alt="${artist.name}" class="w-full h-full object-cover">` : 
                             `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
@@ -1055,7 +1058,12 @@ class UIService {
         let html = `
             <div class="animate__animated animate__fadeIn">
                 <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
-                    <div class="w-48 h-48 rounded-xl overflow-hidden flex-shrink-0">
+                    <div class="w-48 h-48 rounded-xl overflow-hidden flex-shrink-0 relative">
+                        ${isFavorite ? 
+                            `<div class="is-favorite">
+                                <i class="fas fa-heart"></i> Gevolgd
+                            </div>` : ''
+                        }
                         ${artistImg ? 
                             `<img src="${artistImg}" alt="${artist.name}" class="w-full h-full object-cover">` : 
                             `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
@@ -1446,6 +1454,84 @@ class UIService {
                     installButton.classList.add('hidden');
                 }
             }
+        }
+    }
+
+    /**
+     * Display statistics modal
+     */
+    displayStatsModal(stats) {
+        const modal = document.getElementById('stats-modal');
+        const topArtistsList = document.getElementById('top-artists-list');
+        const recentActivityList = document.getElementById('recent-activity-list');
+        const totalPlaysElement = document.getElementById('total-plays');
+        
+        if (!modal || !topArtistsList || !recentActivityList || !totalPlaysElement) return;
+        
+        // Display top artists
+        let topArtistsHtml = '';
+        if (stats.topArtists.length > 0) {
+            stats.topArtists.forEach((artist, index) => {
+                topArtistsHtml += `
+                    <div class="stats-item flex items-center justify-between p-2">
+                        <div class="flex items-center">
+                            <span class="text-primary font-bold mr-2">${index + 1}.</span>
+                            <span>${artist.name}</span>
+                        </div>
+                        <span class="bg-primary bg-opacity-20 text-primary dark:text-primary-light px-2 py-1 rounded-full text-sm">
+                            ${artist.count} keer
+                        </span>
+                    </div>
+                `;
+            });
+        } else {
+            topArtistsHtml = '<p class="text-center text-gray-500 py-2">Nog geen luistergeschiedenis</p>';
+        }
+        topArtistsList.innerHTML = topArtistsHtml;
+        
+        // Display recent activity
+        let recentActivityHtml = '';
+        if (stats.recentActivity.length > 0) {
+            stats.recentActivity.forEach(activity => {
+                const date = new Date(activity.timestamp);
+                const formattedDate = date.toLocaleString('nl-NL', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                recentActivityHtml += `
+                    <div class="stats-item p-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-medium">${activity.trackName}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${activity.artistName} • ${activity.albumName}</p>
+                            </div>
+                            <span class="text-xs text-gray-500">${formattedDate}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            recentActivityHtml = '<p class="text-center text-gray-500 py-2">Nog geen luistergeschiedenis</p>';
+        }
+        recentActivityList.innerHTML = recentActivityHtml;
+        
+        // Set total plays
+        totalPlaysElement.textContent = stats.totalPlays;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+    
+    /**
+     * Hide statistics modal
+     */
+    hideStatsModal() {
+        const modal = document.getElementById('stats-modal');
+        if (modal) {
+            modal.classList.add('hidden');
         }
     }
 }

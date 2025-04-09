@@ -4,11 +4,59 @@
  */
 class MusicAlertApp {
     constructor() {
-        this.favorites = JSON.parse(localStorage.getItem('spotifyFavorites')) || [];
+        // Use localStorage with a persistent approach to prevent data loss
+        this.favorites = this.loadFavoritesFromStorage() || [];
         this.lastSearchResults = [];
         this.notificationsEnabled = false;
         this.exportImportModalOpen = false;
+        this.statsModalOpen = false;
         this.releaseAgeDays = parseInt(localStorage.getItem('releaseAgeDays')) || 7; // Default to 7 days
+    }
+    
+    /**
+     * Load favorites from storage with protection against data loss
+     */
+    loadFavoritesFromStorage() {
+        try {
+            // Attempt to load from localStorage
+            const storedFavorites = localStorage.getItem('spotifyFavorites');
+            if (storedFavorites) {
+                return JSON.parse(storedFavorites);
+            }
+            
+            // If localStorage is empty, try to recover from backup
+            const backupFavorites = localStorage.getItem('spotifyFavoritesBackup');
+            if (backupFavorites) {
+                // Restore from backup
+                const favorites = JSON.parse(backupFavorites);
+                localStorage.setItem('spotifyFavorites', JSON.stringify(favorites));
+                return favorites;
+            }
+            
+            return [];
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+            return [];
+        }
+    }
+    
+    /**
+     * Save favorites with backup to prevent data loss
+     */
+    saveFavoritesToStorage() {
+        try {
+            // Save to primary storage
+            localStorage.setItem('spotifyFavorites', JSON.stringify(this.favorites));
+            
+            // Also save to backup storage
+            localStorage.setItem('spotifyFavoritesBackup', JSON.stringify(this.favorites));
+            
+            // Set a timestamp to track when favorites were last saved
+            localStorage.setItem('favoritesLastSaved', Date.now().toString());
+        } catch (error) {
+            console.error('Error saving favorites:', error);
+            ui.showMessage('Er is een fout opgetreden bij het opslaan van je favorieten', 'error');
+        }
     }
     
     /**
@@ -17,6 +65,9 @@ class MusicAlertApp {
     async initialize() {
         // Initialize UI components
         await ui.initialize();
+        
+        // Check if favorites might have been lost and attempt recovery
+        this.checkFavoritesIntegrity();
         
         // Initialize sorting and filtering
         ui.initializeSortingAndFiltering();
@@ -41,6 +92,59 @@ class MusicAlertApp {
         
         // Handle shared content if any
         this.handleSharedContent();
+        
+        // Setup audio player listeners for stats tracking
+        this.setupAudioPlayerTracking();
+    }
+    
+    /**
+     * Check favorites integrity and attempt recovery if needed
+     */
+    checkFavoritesIntegrity() {
+        try {
+            // Check if favorites might have been lost
+            const lastSaved = parseInt(localStorage.getItem('favoritesLastSaved')) || 0;
+            const now = Date.now();
+            const daysSinceLastSave = (now - lastSaved) / (1000 * 60 * 60 * 24);
+            
+            // If it's been more than a day since last save and we have no favorites
+            // but we do have a backup, restore from backup
+            if (daysSinceLastSave > 1 && this.favorites.length === 0) {
+                const backupFavorites = localStorage.getItem('spotifyFavoritesBackup');
+                if (backupFavorites) {
+                    const backup = JSON.parse(backupFavorites);
+                    if (backup && backup.length > 0) {
+                        this.favorites = backup;
+                        this.saveFavoritesToStorage();
+                        ui.showMessage('Je gevolgde DJ\'s zijn hersteld', 'success');
+                    }
+                }
+            }
+            
+            // Always update the last saved timestamp to prevent unnecessary recovery attempts
+            localStorage.setItem('favoritesLastSaved', now.toString());
+        } catch (error) {
+            console.error('Error checking favorites integrity:', error);
+        }
+    }
+    
+    /**
+     * Setup audio player tracking for statistics
+     */
+    setupAudioPlayerTracking() {
+        // Use event delegation to catch all audio player events
+        document.addEventListener('play', (e) => {
+            if (e.target.tagName === 'AUDIO' && e.target.classList.contains('audio-player')) {
+                const artistId = e.target.dataset.artistId;
+                const trackId = e.target.dataset.trackId;
+                const trackName = e.target.dataset.trackName;
+                const albumName = e.target.dataset.albumName;
+                
+                if (artistId && trackId) {
+                    this.trackListening(artistId, trackId, trackName, albumName);
+                }
+            }
+        }, true);
     }
 
     /**
@@ -148,6 +252,7 @@ class MusicAlertApp {
         if (existingIndex >= 0) {
             // Remove from favorites
             this.favorites.splice(existingIndex, 1);
+            ui.showMessage(`${artistName} is niet meer gevolgd`, 'info');
         } else {
             // If we don't have complete artist info, fetch it
             if (!artistName || !artistImg) {
@@ -169,10 +274,12 @@ class MusicAlertApp {
                 genres: genres,
                 addedAt: Date.now() // Add timestamp for sorting by recently added
             });
+            
+            ui.showMessage(`${artistName} is nu gevolgd`, 'success');
         }
         
-        // Save to localStorage
-        localStorage.setItem('spotifyFavorites', JSON.stringify(this.favorites));
+        // Save to localStorage with backup
+        this.saveFavoritesToStorage();
         
         // Update UI
         this.displayFavorites();
@@ -406,7 +513,7 @@ class MusicAlertApp {
                 }
                 
                 // Save to localStorage
-                localStorage.setItem('spotifyFavorites', JSON.stringify(this.favorites));
+                this.saveFavoritesToStorage();
                 
                 // Update UI
                 this.displayFavorites();
@@ -592,6 +699,7 @@ class MusicAlertApp {
     showStatsModal() {
         const stats = this.getListeningStats();
         ui.displayStatsModal(stats);
+        this.statsModalOpen = true;
     }
 
     /**
@@ -703,4 +811,23 @@ const app = new MusicAlertApp();
 // When DOM is loaded, initialize the app
 document.addEventListener('DOMContentLoaded', () => {
     app.initialize();
+});
+
+// Add event listeners for audio players
+document.addEventListener('DOMContentLoaded', () => {
+    // Monitor for audio play events to track statistics
+    document.addEventListener('play', (e) => {
+        if (e.target.tagName === 'AUDIO' && e.target.classList.contains('audio-player')) {
+            // Details about what is being played are stored in data attributes
+            const artistId = e.target.dataset.artistId;
+            const trackId = e.target.dataset.trackId;
+            const trackName = e.target.dataset.trackName;
+            const albumName = e.target.dataset.albumName;
+            
+            if (artistId && trackId) {
+                // Track this for statistics
+                app.trackListening(artistId, trackId, trackName, albumName);
+            }
+        }
+    }, true);
 });

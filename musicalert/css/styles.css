@@ -242,6 +242,8 @@ html {
     --card-border: #e5e7eb;
     --input-bg: #ffffff;
     --input-border: #d1d5db;
+    --card-text: #111827;
+    --card-text-secondary: #4b5563;
 }
 
 .dark {
@@ -251,6 +253,8 @@ html {
     --card-border: #374151;
     --input-bg: #1f2937;
     --input-border: #4b5563;
+    --card-text: #f9fafb;
+    --card-text-secondary: #d1d5db;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -261,6 +265,8 @@ html {
         --card-border: #374151;
         --input-bg: #1f2937;
         --input-border: #4b5563;
+        --card-text: #f9fafb;
+        --card-text-secondary: #d1d5db;
     }
 }
 
@@ -385,6 +391,80 @@ select:focus-visible {
     transform: translateY(-5px);
 }
 
+/* Better dark mode support for cards and text */
+.dark .artist-card h3,
+.dark .artist-card h4,
+.dark .album-card h3,
+.dark .album-card h4,
+.dark #favorites-content h3,
+.dark #notifications-content h3,
+.dark #recommendations-content h3 {
+    color: var(--card-text);
+}
+
+.dark .artist-card,
+.dark .album-card {
+    background-color: var(--card-bg);
+    color: var(--card-text);
+}
+
+.dark .artist-suggestion {
+    color: var(--card-text);
+}
+
+.dark .artist-suggestion:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500 {
+    color: var(--card-text-secondary);
+}
+
+/* Statistics modal styles */
+#stats-modal .stats-card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--card-text);
+}
+
+#stats-modal .stats-header {
+    background-color: #6C4AE6;
+    color: white;
+}
+
+.stats-item {
+    border-bottom: 1px solid var(--card-border);
+}
+
+.stats-item:last-child {
+    border-bottom: none;
+}
+
+.dark .stats-count {
+    color: #6C4AE6;
+}
+
+/* Followed artist indicator */
+.is-favorite {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(220, 38, 38, 0.8);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.is-favorite i {
+    margin-right: 0.25rem;
+}
+
 /* Mobile button adjustments */
 @media (max-width: 640px) {
     /* Smaller button text and padding on mobile */
@@ -400,6 +480,14 @@ select:focus-visible {
         #favorites .artist-card button:last-child span,
         #notifications button:last-child span {
             display: none;
+        }
+        
+        /* Make primary buttons slightly more visible */
+        #favorites .artist-card button:first-child,
+        #notifications button:first-child,
+        #notifications a:first-child {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
         }
     }
     

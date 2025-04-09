@@ -487,6 +487,44 @@
             </div>
         </div>
     </div>
+    
+    <!-- Statistics Modal -->
+    <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-md overflow-hidden animate__animated animate__fadeInUp">
+            <div class="p-4 stats-header">
+                <h3 class="font-bold flex items-center">
+                    <i class="fas fa-chart-line mr-2"></i>Luisterstatistieken
+                </h3>
+            </div>
+            
+            <div class="p-5">
+                <div id="top-artists-stats" class="mb-6">
+                    <h4 class="font-bold mb-3">Top DJ's</h4>
+                    <div id="top-artists-list" class="space-y-2">
+                        <!-- Top artists will be inserted here -->
+                    </div>
+                </div>
+                
+                <div id="recent-activity-stats" class="mb-6 border-t border-gray-200 pt-4">
+                    <h4 class="font-bold mb-3">Recent Beluisterd</h4>
+                    <div id="recent-activity-list" class="space-y-2">
+                        <!-- Recent activity will be inserted here -->
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-200 pt-4 text-center">
+                    <p class="mb-1">Totaal aantal keer afgespeeld</p>
+                    <p id="total-plays" class="text-2xl font-bold stats-count">0</p>
+                </div>
+            </div>
+            
+            <div class="p-3 border-t border-gray-200">
+                <button onclick="ui.hideStatsModal()" class="w-full text-center p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition">
+                    Sluiten
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-6 md:py-12">
