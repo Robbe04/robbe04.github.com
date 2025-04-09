@@ -448,12 +448,14 @@ class MusicAlertApp {
         }
         
         try {
-            ui.showLoading('Aankomende releases laden...');
             const preReleases = await api.getPreReleases(this.favorites);
+            
+            // Log for debugging
+            console.log(`Found ${preReleases.length} pre-releases/upcoming tracks`);
+            
+            // Display in UI
             ui.displayPreReleases(preReleases);
-            ui.hideLoading();
         } catch (error) {
-            ui.hideLoading();
             console.error('Error loading pre-releases:', error);
             ui.showError('Er is een fout opgetreden bij het laden van aankomende releases.');
         }
