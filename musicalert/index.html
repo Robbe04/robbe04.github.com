@@ -165,6 +165,25 @@
         .track-item:hover {
             background-color: rgba(108, 74, 230, 0.05);
         }
+
+        /* Add styles for loading text on mobile */
+        @media (max-width: 640px) {
+            #pre-releases .text-gray-500,
+            #notifications .text-gray-500 {
+                color: rgba(107, 114, 128, 1) !important; /* Force the correct text color */
+            }
+        }
+        
+        /* Fix for loading spinner color */
+        .loading-spinner {
+            color: #6C4AE6 !important;
+        }
+        
+        /* Add some extra margin to the text in loading indicators */
+        #pre-releases .text-gray-500,
+        #notifications .text-gray-500 {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -1445,6 +1464,24 @@
                 // This is just to ensure we have global event delegation if needed
             }
         });
+    </script>
+
+    <!-- Update the mobile display structure in pre-releases -->
+    <script>
+        // Make sure loading states use consistent colors
+        function updateLoadingDisplay() {
+            // Add loading-spinner class to all loading spinners
+            document.querySelectorAll('.fa-spinner.fa-spin').forEach(spinner => {
+                spinner.classList.add('loading-spinner');
+            });
+        }
+        
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', updateLoadingDisplay);
+        
+        // Also run when the DOM changes
+        const observer = new MutationObserver(updateLoadingDisplay);
+        observer.observe(document.body, { childList: true, subtree: true });
     </script>
 </body>
 </html>

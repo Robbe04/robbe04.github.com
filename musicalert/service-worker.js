@@ -152,7 +152,17 @@ async function checkForNewReleases() {
     clients[0].postMessage({
       type: 'CHECK_RELEASES'
     });
+    
+    console.log('Background sync: Requested client to check for new releases');
   } catch (error) {
     console.error('Error checking for new releases in service worker:', error);
   }
 }
+
+// Handle messages from clients
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CHECK_COMPLETE') {
+    console.log('Background sync: Client completed checking for new releases');
+  }
+}
+);
