@@ -639,23 +639,50 @@
             <div class="p-4 bg-primary text-white text-center">
                 <h3 class="font-bold">Snelle Acties</h3>
             </div>
-            <div class="p-3">
-                <button onclick="app.goToSearch()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
-                    <i class="fas fa-search mr-3 text-primary"></i>
-                    <span>Zoek Nieuwe DJ's</span>
-                </button>
-                <button onclick="app.switchTab('favorites'); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
-                    <i class="fas fa-heart mr-3 text-red-500"></i>
-                    <span>Mijn Gevolgde DJ's</span>
-                </button>
-                <button onclick="app.switchTab('notifications'); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
-                    <i class="fas fa-bell mr-3 text-yellow-500"></i>
-                    <span>Nieuwe Releases</span>
-                </button>
-                <button onclick="app.toggleNotifications()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
-                    <i id="mobile-notification-icon" class="far fa-bell mr-3 text-blue-500"></i>
-                    <span id="mobile-notification-text">Notificaties Inschakelen</span>
-                </button>
+            <div class="p-3 divide-y divide-gray-100">
+                <!-- Main Features Section -->
+                <div class="pb-2">
+                    <button onclick="app.switchTab('pre-releases'); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-hourglass-half mr-3 text-orange-500"></i>
+                        <span class="font-medium">Aankomende Releases</span>
+                    </button>
+                    <button onclick="showEventsPanel(); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-calendar-alt mr-3 text-green-500"></i>
+                        <span class="font-medium">DJ Evenementen</span>
+                    </button>
+                </div>
+                
+                <!-- Secondary Features Section -->
+                <div class="py-2">
+                    <button onclick="app.goToSearch()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-search mr-3 text-primary"></i>
+                        <span>Zoek Nieuwe DJ's</span>
+                    </button>
+                    <button onclick="app.switchTab('favorites'); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-heart mr-3 text-red-500"></i>
+                        <span>Mijn Gevolgde DJ's</span>
+                    </button>
+                    <button onclick="app.switchTab('notifications'); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-bell mr-3 text-yellow-500"></i>
+                        <span>Nieuwe Releases</span>
+                    </button>
+                </div>
+                
+                <!-- Import/Export and Settings Section -->
+                <div class="py-2">
+                    <button onclick="app.toggleExportImportModal(); app.closeQuickActions()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-file-export mr-3 text-blue-600"></i>
+                        <span class="font-medium">Import/Export Favorieten</span>
+                    </button>
+                    <button onclick="app.toggleNotifications()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i id="mobile-notification-icon" class="far fa-bell mr-3 text-blue-500"></i>
+                        <span id="mobile-notification-text">Notificaties Inschakelen</span>
+                    </button>
+                    <button onclick="app.toggleThemeFromMobile()" class="w-full text-left p-3 hover:bg-gray-100 rounded-lg flex items-center">
+                        <i class="fas fa-moon mr-3 text-gray-700"></i>
+                        <span id="mobile-theme-text">Donkere Modus</span>
+                    </button>
+                </div>
             </div>
             <div class="p-3 border-t">
                 <button onclick="app.closeQuickActions()" class="w-full text-center p-3 bg-gray-200 hover:bg-gray-300 rounded-lg">

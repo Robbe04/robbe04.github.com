@@ -673,6 +673,35 @@ class MusicAlertApp {
         const mobileMenu = document.getElementById('mobile-menu');
         if (mobileMenu) {
             mobileMenu.classList.toggle('hidden');
+            
+            // Update theme text when opening the menu
+            if (!mobileMenu.classList.contains('hidden')) {
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                const mobileThemeText = document.getElementById('mobile-theme-text');
+                if (mobileThemeText) {
+                    mobileThemeText.textContent = currentTheme === 'light' ? 'Donkere Modus' : 'Lichte Modus';
+                }
+            }
+        }
+    }
+
+    /**
+     * Toggle theme from mobile menu
+     */
+    toggleThemeFromMobile() {
+        // Get the current theme
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        // Toggle between light and dark
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        // Update theme
+        ui.updateTheme(newTheme);
+        
+        // Update mobile menu button text
+        const mobileThemeText = document.getElementById('mobile-theme-text');
+        if (mobileThemeText) {
+            mobileThemeText.textContent = newTheme === 'light' ? 'Donkere Modus' : 'Lichte Modus';
         }
     }
 
