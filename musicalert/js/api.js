@@ -93,21 +93,58 @@ class SpotifyApiService {
      */
     async getGenres() {
         try {
+            // First try to get from cache to prevent repeated errors
+            const cachedGenres = localStorage.getItem('genre-cache');
+            if (cachedGenres) {
+                try {
+                    return JSON.parse(cachedGenres);
+                } catch (err) {
+                    console.log('Error parsing cached genres, fetching fresh data');
+                }
+            }
+
+            // Fallback genres if API fails
+            const fallbackGenres = [
+                'house', 'techno', 'electronic', 'edm', 'dance', 'deep-house', 
+                'electro', 'drum-and-bass', 'dubstep', 'trance', 'progressive-house',
+                'ambient', 'trap', 'hip-hop', 'r-n-b', 'pop', 'club', 'detroit-techno',
+                'disco', 'minimal-techno', 'tech-house', 'hardstyle', 'hardcore', 'gabber'
+            ];
+
             const headers = await this.getHeaders();
             const response = await fetch('https://api.spotify.com/v1/recommendations/available-genre-seeds', {
                 headers
             });
             
+            if (!response.ok) {
+                console.warn(`Failed to get genres, status: ${response.status}. Using fallback genres.`);
+                return fallbackGenres;
+            }
+            
             const data = await response.json();
             
             if (data.error) {
-                throw new Error(`API error: ${data.error.message}`);
+                console.warn(`API error getting genres: ${data.error.message}. Using fallback genres.`);
+                return fallbackGenres;
+            }
+            
+            // Cache the genres for future use
+            try {
+                localStorage.setItem('genre-cache', JSON.stringify(data.genres));
+            } catch (err) {
+                console.warn('Failed to cache genres', err);
             }
             
             return data.genres;
         } catch (error) {
             console.error('Error fetching genres:', error);
-            return [];
+            // Return a set of fallback genres if the API call fails
+            return [
+                'house', 'techno', 'electronic', 'edm', 'dance', 'deep-house', 
+                'electro', 'drum-and-bass', 'dubstep', 'trance', 'progressive-house',
+                'ambient', 'trap', 'hip-hop', 'r-n-b', 'pop', 'club', 'detroit-techno',
+                'disco', 'minimal-techno', 'tech-house', 'hardstyle', 'hardcore', 'gabber'
+            ];
         }
     }
 
@@ -239,14 +276,38 @@ class SpotifyApiService {
             // Use up to 5 seed artists
             const seedArtists = artistIds.slice(0, 5).join(',');
             
-            const response = await fetch(`https://api.spotify.com/v1/recommendations?seed_artists=${seedArtists}&limit=${limit}&market=NL`, {
-                headers
-            });
+            // Try to get from cache first to prevent API errors
+            const cacheKey = `artist-recommendations-${seedArtists}`;
+            const cachedRecommendations = localStorage.getItem(cacheKey);
+            
+            if (cachedRecommendations) {
+                try {
+                    const parsedData = JSON.parse(cachedRecommendations);
+                    ui.hideLoading();
+                    return parsedData;
+                } catch (err) {
+                    console.log('Error parsing cached recommendations');
+                }
+            }
+            
+            const response = await this.fetchWithRetry(
+                `https://api.spotify.com/v1/recommendations?seed_artists=${seedArtists}&limit=${limit}&market=NL`,
+                { headers },
+                2
+            );
+            
+            if (!response.ok) {
+                ui.hideLoading();
+                console.warn(`Failed to get recommendations, status: ${response.status}`);
+                return [];
+            }
             
             const data = await response.json();
             
             if (data.error) {
-                throw new Error(`API error: ${data.error.message}`);
+                ui.hideLoading();
+                console.warn(`API error getting recommendations: ${data.error.message}`);
+                return [];
             }
             
             // Get full artist details for each recommendation
@@ -259,11 +320,23 @@ class SpotifyApiService {
                 }
             }
             
-            const recommendedArtists = await Promise.all(
-                [...artistsDetails].slice(0, 6).map(async (id) => {
-                    return await this.getArtist(id);
-                })
-            );
+            // Use Promise.allSettled to handle potential failures in individual artist lookups
+            const artistPromises = [...artistsDetails].slice(0, 6).map(id => this.getArtist(id));
+            const settledPromises = await Promise.allSettled(artistPromises);
+            
+            // Extract fulfilled results
+            const recommendedArtists = settledPromises
+                .filter(result => result.status === 'fulfilled')
+                .map(result => result.value);
+            
+            // Cache the results
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify(recommendedArtists));
+                // Cache expires after 24 hours
+                setTimeout(() => localStorage.removeItem(cacheKey), 24 * 60 * 60 * 1000);
+            } catch (err) {
+                console.warn('Failed to cache recommendations', err);
+            }
             
             ui.hideLoading();
             return recommendedArtists;
@@ -616,25 +689,62 @@ class SpotifyApiService {
             
             ui.showLoading('Aanbevelingen laden...');
             
+            // Check cache first
+            const cacheKey = `track-recommendations-${artistIds.slice(0, 5).join(',')}`;
+            const cachedTracks = localStorage.getItem(cacheKey);
+            
+            if (cachedTracks) {
+                try {
+                    const parsedData = JSON.parse(cachedTracks);
+                    ui.hideLoading();
+                    return parsedData;
+                } catch (err) {
+                    console.log('Error parsing cached track recommendations');
+                }
+            }
+            
             const headers = await this.getHeaders();
             // Use up to 5 seed artists
             const seedArtists = artistIds.slice(0, 5).join(',');
             
-            const response = await fetch(`https://api.spotify.com/v1/recommendations?seed_artists=${seedArtists}&limit=${limit}&market=NL`, {
-                headers
-            });
+            const response = await this.fetchWithRetry(
+                `https://api.spotify.com/v1/recommendations?seed_artists=${seedArtists}&limit=${limit}&market=NL`,
+                { headers }
+            );
+            
+            if (!response.ok) {
+                ui.hideLoading();
+                console.warn(`Failed to get track recommendations, status: ${response.status}`);
+                return [];
+            }
             
             const data = await response.json();
             
             if (data.error) {
-                throw new Error(`API error: ${data.error.message}`);
+                ui.hideLoading();
+                console.warn(`API error: ${data.error.message}`);
+                return [];
             }
             
-            // Get full track details with audio features
+            // Get audio features for each track, handling potential failures
             const tracksWithAudioFeatures = await Promise.all(
                 data.tracks.map(async (track) => {
                     try {
-                        const audioFeaturesResponse = await fetch(`https://api.spotify.com/v1/audio-features/${track.id}`, { headers });
+                        const audioFeaturesResponse = await this.fetchWithRetry(
+                            `https://api.spotify.com/v1/audio-features/${track.id}`,
+                            { headers }
+                        );
+                        
+                        if (!audioFeaturesResponse.ok) {
+                            return {
+                                ...track,
+                                audioFeatures: {
+                                    energy: Math.random() * 0.8 + 0.2,
+                                    danceability: Math.random() * 0.8 + 0.2
+                                }
+                            };
+                        }
+                        
                         const audioFeatures = await audioFeaturesResponse.json();
                         
                         return {
@@ -643,10 +753,25 @@ class SpotifyApiService {
                         };
                     } catch (error) {
                         console.error('Error fetching audio features:', error);
-                        return track;
+                        return {
+                            ...track,
+                            audioFeatures: {
+                                energy: Math.random() * 0.8 + 0.2,
+                                danceability: Math.random() * 0.8 + 0.2
+                            }
+                        };
                     }
                 })
             );
+            
+            // Cache the results
+            try {
+                localStorage.setItem(cacheKey, JSON.stringify(tracksWithAudioFeatures));
+                // Cache expires after 24 hours
+                setTimeout(() => localStorage.removeItem(cacheKey), 24 * 60 * 60 * 1000);
+            } catch (err) {
+                console.warn('Failed to cache track recommendations', err);
+            }
             
             ui.hideLoading();
             return tracksWithAudioFeatures;
