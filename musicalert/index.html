@@ -185,6 +185,28 @@
         #notifications .text-gray-500 {
             margin-bottom: 0.5rem;
         }
+        
+        /* Shortcut hint button styles */
+        .shortcut-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 50;
+            background-color: #6C4AE6;
+            color: white;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+        }
+        
+        .shortcut-hint:hover {
+            background-color: #5438C8;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -993,6 +1015,11 @@
     <script src="js/events-manager.js"></script>
     <script src="js/stats-analyzer.js"></script>
     <script src="js/social-sharing.js"></script>
+    
+    <!-- Keyboard shortcut hint button -->
+    <div class="shortcut-hint" onclick="ui.showShortcutGuide()" title="Toetsenbord Snelkoppelingen (?)">
+        <i class="fas fa-keyboard"></i>
+    </div>
     
     <!-- Script for new modules UI integration -->
     <script>
