@@ -600,8 +600,8 @@ class UIService {
                     <div class="flex items-start">
                         <img src="${album.images[0]?.url || ''}" alt="${album.name}" class="w-20 h-20 mr-4 object-cover rounded-lg">
                         <div class="flex-1">
-                            <div class="flex justify-between items-start">
-                                <div>
+                            <div class="flex md:flex-row flex-col justify-between md:items-start">
+                                <div class="flex-1 min-w-0 pr-2">
                                     <div class="flex flex-wrap items-center gap-x-1 gap-y-0">
                                         <p class="font-bold text-lg">${artist.name}</p>
                                         ${collaborationText ? 
@@ -1826,9 +1826,6 @@ class UIService {
         
         // Add audio element to container
         previewContainer.appendChild(audio);
-        
-        // Add to document
-        document.body.appendChild(previewContainer);
         
         // Setup event listeners
         this.setupPreviewPlayerEvents(audio);

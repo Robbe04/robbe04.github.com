@@ -461,13 +461,50 @@ class MusicAlertApp {
         
         try {
             ui.showLoading('Aankomende releases laden...');
+            
+            // Show loading indicator in the pre-releases container
+            const container = document.getElementById('pre-releases');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fas fa-spinner fa-spin text-3xl loading-spinner"></i>
+                        </div>
+                        <p class="text-gray-500">Aankomende releases laden...</p>
+                    </div>
+                `;
+            }
+            
             const preReleases = await api.getPreReleases(this.favorites);
-            ui.displayPreReleases(preReleases);
+            console.log('Pre-releases loaded:', preReleases);
+            
+            // Filter out releases that have already been released
+            const now = new Date();
+            const futureReleases = preReleases.filter(release => {
+                const releaseDate = new Date(release.releaseDate);
+                return releaseDate > now;
+            });
+            
+            console.log('Future releases filtered:', futureReleases.length);
+            ui.displayPreReleases(futureReleases);
             ui.hideLoading();
         } catch (error) {
             ui.hideLoading();
             console.error('Error loading pre-releases:', error);
-            ui.showError('Er is een fout opgetreden bij het laden van aankomende releases.');
+            
+            // Still display the error in the UI so users know what happened
+            const container = document.getElementById('pre-releases');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-red-500 mb-4">
+                            <i class="fas fa-exclamation-circle text-5xl"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium">Er is een fout opgetreden</p>
+                        <p class="text-gray-500 text-sm mt-2">Kon aankomende releases niet laden</p>
+                    </div>
+                `;
+            }
         }
     }
 
