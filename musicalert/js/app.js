@@ -471,6 +471,7 @@ class MusicAlertApp {
                             <i class="fas fa-spinner fa-spin text-3xl loading-spinner"></i>
                         </div>
                         <p class="text-gray-500">Aankomende releases laden...</p>
+                        <p class="text-gray-500 text-xs mt-2">Dit kan even duren door API-beperkingen</p>
                     </div>
                 `;
             }
@@ -478,6 +479,10 @@ class MusicAlertApp {
             console.log('Fetching pre-releases...');
             const preReleases = await api.getPreReleases(this.favorites);
             console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
+            
+            if (preReleases?.length === 0) {
+                ui.showMessage('Geen aankomende releases gevonden of API-limiet bereikt. Probeer het later opnieuw.', 'info');
+            }
             
             ui.displayPreReleases(preReleases);
             ui.hideLoading();
@@ -490,17 +495,19 @@ class MusicAlertApp {
             if (container) {
                 container.innerHTML = `
                     <div class="col-span-full text-center py-8">
-                        <div class="text-red-500 mb-4">
+                        <div class="text-gray-400 mb-4">
                             <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
                         <p class="text-gray-700">Er is een fout opgetreden bij het laden van aankomende releases</p>
-                        <p class="text-gray-500 text-sm mt-2">Probeer het later opnieuw</p>
+                        <p class="text-gray-500 text-sm mt-2">Waarschijnlijk heb je de API-limiet bereikt. Probeer het later opnieuw.</p>
                         <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
                             Opnieuw proberen
                         </button>
                     </div>
                 `;
             }
+            
+            ui.showMessage('API-limiet bereikt. Je hebt te veel verzoeken gedaan naar de Spotify API.', 'error');
         }
     }
 

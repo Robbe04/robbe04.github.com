@@ -1151,7 +1151,7 @@ class UIService {
                             </a>
                             <button onclick="app.shareRelease('${artist.name}', '${album.name}', '${album.external_urls.spotify}')" 
                                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
-                               <i class="fas fa-share-alt"></i>
+                               <i class="fas fa-share-alt"></i>Delen
                             </button>
                         </div>
                     </div>
@@ -1551,7 +1551,14 @@ class UIService {
                         <i class="fas fa-calendar-day text-5xl"></i>
                     </div>
                     <p class="text-gray-500">Geen aankomende releases gevonden</p>
-                    <p class="text-gray-500 text-sm mt-2">Volg meer DJ's om hun aankomende releases te zien</p>
+                    <p class="text-gray-500 text-sm mt-2">Dit kan worden veroorzaakt door API-beperkingen</p>
+                    <p class="text-gray-500 text-xs mt-4">
+                        De Spotify API beperkt het aantal verzoeken. 
+                        Probeer het later opnieuw als je veel artiesten volgt.
+                    </p>
+                    <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
+                        Opnieuw proberen
+                    </button>
                 </div>
             `;
             return;
@@ -1563,6 +1570,17 @@ class UIService {
             if (!b.releaseDate) return -1;
             return a.releaseDate - b.releaseDate;
         });
+        
+        // Add a note about API limitations
+        const noteElement = document.createElement('div');
+        noteElement.className = 'col-span-full mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg';
+        noteElement.innerHTML = `
+            <p class="text-sm flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                Door API-beperkingen worden alleen releases van de eerste 10 artiesten weergegeven.
+            </p>
+        `;
+        container.appendChild(noteElement);
         
         for (const release of preReleases) {
             // Skip invalid releases
