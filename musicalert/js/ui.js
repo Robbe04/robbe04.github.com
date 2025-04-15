@@ -8,9 +8,317 @@ class UIService {
         this.audioVisualizers = new Map();
         this.preSearchGenreFilters = [];
         this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.shortcutGuideVisible = false;
 
         // Initialize theme on startup
         this.initializeTheme();
+        
+        // Initialize keyboard shortcuts
+        this.initKeyboardShortcuts();
+    }
+
+    /**
+     * Initialize keyboard shortcuts
+     */
+    initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts when user is typing in an input field or textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            // Show shortcut guide if user presses '?'
+            if (e.key === '?' && !this.shortcutGuideVisible) {
+                e.preventDefault();
+                this.showShortcutGuide();
+                return;
+            }
+            
+            // Escape key to close modals and the shortcut guide
+            if (e.key === 'Escape') {
+                this.hideShortcutGuide();
+                
+                // Also stop any playing audio
+                if (typeof this.stopCurrentPreview === 'function') {
+                    this.stopCurrentPreview();
+                }
+                
+                // Close any open modals
+                app.closeQuickActions();
+                return;
+            }
+            
+            // Navigation shortcuts
+            if (e.key === 'f' || e.key === '1') {
+                e.preventDefault();
+                app.switchTab('favorites');
+                this.showShortcutToast('Naar Favorieten', 'f');
+            } else if (e.key === 'n' || e.key === '2') {
+                e.preventDefault();
+                app.switchTab('notifications');
+                this.showShortcutToast('Naar Nieuwe Releases', 'n');
+            } else if (e.key === 'p' || e.key === '3') {
+                e.preventDefault();
+                app.switchTab('pre-releases');
+                this.showShortcutToast('Naar Aankomende Releases', 'p');
+            } else if (e.key === 'r' || e.key === '4') {
+                e.preventDefault();
+                app.switchTab('recommendations');
+                this.showShortcutToast('Naar Aanbevelingen', 'r');
+            } else if (e.key === 'e' || e.key === '5') {
+                e.preventDefault();
+                if (typeof showEventsPanel === 'function') {
+                    showEventsPanel();
+                }
+                this.showShortcutToast('Naar Evenementen', 'e');
+            }
+            
+            // Search shortcut
+            if ((e.key === '/' || (e.ctrlKey && e.key === 'f')) && !e.shiftKey) {
+                e.preventDefault();
+                const searchInput = document.getElementById('artistInput');
+                if (searchInput) {
+                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    searchInput.focus();
+                    this.showShortcutToast('Zoeken', '/');
+                }
+            }
+            
+            // Audio control shortcuts
+            if (e.key === ' ' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                const previewPlayer = document.getElementById('preview-player');
+                if (previewPlayer) {
+                    e.preventDefault(); // Prevent page scrolling
+                    const playPauseBtn = document.getElementById('preview-play-pause');
+                    
+                    if (previewPlayer.paused) {
+                        previewPlayer.play();
+                        if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                        this.showShortcutToast('Afspelen', 'Space');
+                    } else {
+                        previewPlayer.pause();
+                        if (playPauseBtn) playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                        this.showShortcutToast('Pauzeren', 'Space');
+                    }
+                }
+            }
+            
+            // Theme toggle with Alt+T
+            if (e.altKey && e.key.toLowerCase() === 't') {
+                e.preventDefault();
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                this.updateTheme(newTheme);
+                this.showShortcutToast(`Thema: ${newTheme === 'light' ? 'Licht' : 'Donker'}`, 'Alt+T');
+            }
+            
+            // Notifications toggle with Alt+N
+            if (e.altKey && e.key.toLowerCase() === 'n') {
+                e.preventDefault();
+                app.toggleNotifications();
+                this.showShortcutToast('Notificaties Omschakelen', 'Alt+N');
+            }
+            
+            // Refresh data with Ctrl+R
+            if (e.ctrlKey && e.key.toLowerCase() === 'r' && !e.shiftKey) {
+                e.preventDefault(); // Prevent browser refresh
+                
+                const activeTab = document.querySelector('.tab-active');
+                if (activeTab) {
+                    if (activeTab.id === 'tab-favorites') {
+                        app.displayFavorites();
+                        this.showShortcutToast('Favorieten Vernieuwen', 'Ctrl+R');
+                    } else if (activeTab.id === 'tab-notifications') {
+                        app.checkNewReleases();
+                        this.showShortcutToast('Releases Vernieuwen', 'Ctrl+R');
+                    } else if (activeTab.id === 'tab-pre-releases') {
+                        app.loadPreReleases();
+                        this.showShortcutToast('Aankomende Releases Vernieuwen', 'Ctrl+R');
+                    } else if (activeTab.id === 'tab-recommendations') {
+                        app.loadRecommendations();
+                        if (typeof app.loadTrackRecommendations === 'function') {
+                            app.loadTrackRecommendations();
+                        }
+                        this.showShortcutToast('Aanbevelingen Vernieuwen', 'Ctrl+R');
+                    }
+                }
+            }
+            
+            // Quick Actions with Alt+Q
+            if (e.altKey && e.key.toLowerCase() === 'q') {
+                e.preventDefault();
+                app.toggleQuickActions();
+                this.showShortcutToast('Snelle Acties', 'Alt+Q');
+            }
+            
+            // Import/Export with Alt+I
+            if (e.altKey && e.key.toLowerCase() === 'i') {
+                e.preventDefault();
+                app.toggleExportImportModal();
+                this.showShortcutToast('Import/Export', 'Alt+I');
+            }
+        });
+    }
+
+    /**
+     * Show a shortcut toast notification
+     */
+    showShortcutToast(action, key) {
+        // Create or get the shortcut toast
+        let toast = document.getElementById('shortcut-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'shortcut-toast';
+            toast.className = 'fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50 flex items-center';
+            document.body.appendChild(toast);
+        }
+        
+        // Set toast content
+        toast.innerHTML = `
+            <span class="mr-2">${action}</span>
+            <kbd class="px-2 py-1 bg-gray-700 border border-gray-600 rounded">${key}</kbd>
+        `;
+        
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('opacity-90');
+        }, 10);
+        
+        // Hide toast after 1.5 seconds
+        setTimeout(() => {
+            toast.classList.remove('opacity-90');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 300);
+        }, 1500);
+    }
+
+    /**
+     * Show shortcut guide modal
+     */
+    showShortcutGuide() {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('shortcuts-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'shortcuts-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate__animated animate__fadeIn';
+            
+            modal.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full mx-4 shadow-lg overflow-hidden">
+                    <div class="p-4 bg-primary text-white">
+                        <h3 class="font-bold flex items-center">
+                            <i class="fas fa-keyboard mr-2"></i>Toetsenbord Snelkoppelingen
+                        </h3>
+                    </div>
+                    
+                    <div class="p-6 max-h-[80vh] overflow-y-auto">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-lg font-bold text-primary mb-2">Navigatie</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex justify-between">
+                                        <span>Naar Favorieten</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">f</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Naar Nieuwe Releases</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">n</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Naar Aankomende Releases</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">p</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Naar Aanbevelingen</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">r</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Naar Evenementen</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">e</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Focus Zoekbalk</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">/</kbd>
+                                    </li>
+                                </ul>
+                                
+                                <h4 class="text-lg font-bold text-primary mb-2 mt-6">Audio Bediening</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex justify-between">
+                                        <span>Afspelen / Pauzeren</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Spatie</kbd>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-lg font-bold text-primary mb-2">Menu's & Modals</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex justify-between">
+                                        <span>Snelle Acties</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Alt+Q</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Import/Export</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Alt+I</kbd>
+                                    </li>
+                                </ul>
+                                
+                                <h4 class="text-lg font-bold text-primary mb-2 mt-6">Instellingen</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex justify-between">
+                                        <span>Donker/Licht Thema</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Alt+T</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Notificaties Aan/Uit</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Alt+N</kbd>
+                                    </li>
+                                </ul>
+                                
+                                <h4 class="text-lg font-bold text-primary mb-2 mt-6">Overig</h4>
+                                <ul class="space-y-2">
+                                    <li class="flex justify-between">
+                                        <span>Data Vernieuwen</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Ctrl+R</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Toon Sneltoetsen</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">?</kbd>
+                                    </li>
+                                    <li class="flex justify-between">
+                                        <span>Sluiten / Annuleren</span>
+                                        <kbd class="px-2 py-1 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">Esc</kbd>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 border-t border-gray-200 dark:border-gray-700">
+                        <button onclick="ui.hideShortcutGuide()" class="w-full text-center p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition">
+                            Sluiten (ESC)
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        } else {
+            modal.classList.remove('hidden');
+        }
+        
+        this.shortcutGuideVisible = true;
+    }
+
+    /**
+     * Hide shortcut guide modal
+     */
+    hideShortcutGuide() {
+        const modal = document.getElementById('shortcuts-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        this.shortcutGuideVisible = false;
     }
 
     /**
