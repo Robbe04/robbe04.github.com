@@ -1542,6 +1542,8 @@ class UIService {
         const container = document.getElementById('pre-releases');
         container.innerHTML = '';
         
+        console.log(`Displaying ${preReleases?.length || 0} pre-releases`);
+        
         if (!preReleases || preReleases.length === 0) {
             container.innerHTML = `
                 <div class="col-span-full text-center py-8">
@@ -1556,10 +1558,23 @@ class UIService {
         }
         
         // Sort by release date (earliest first)
-        preReleases.sort((a, b) => a.releaseDate - b.releaseDate);
+        preReleases.sort((a, b) => {
+            if (!a.releaseDate) return 1;
+            if (!b.releaseDate) return -1;
+            return a.releaseDate - b.releaseDate;
+        });
         
         for (const release of preReleases) {
+            // Skip invalid releases
+            if (!release.album || !release.artist || !release.releaseDate) {
+                console.warn('Invalid release data:', release);
+                continue;
+            }
+            
+            // Calculate days until release
             const daysUntilRelease = Math.ceil((release.releaseDate - new Date()) / (1000 * 60 * 60 * 24));
+            
+            // Format the date for display
             const releaseDateFormatted = release.releaseDate.toLocaleDateString('nl-NL', { 
                 day: 'numeric', 
                 month: 'long', 
@@ -1568,6 +1583,13 @@ class UIService {
             
             const card = document.createElement('div');
             card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row mb-4';
+            
+            let artistJson = '';
+            try {
+                artistJson = JSON.stringify(release.artist.genres || []).replace(/'/g, "\\'");
+            } catch (e) {
+                artistJson = '[]';
+            }
             
             card.innerHTML = `
                 <div class="md:w-1/4 flex-shrink-0">
@@ -1598,7 +1620,7 @@ class UIService {
                     </div>
                     
                     <div class="mt-auto flex justify-between items-center">
-                        <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${release.artist.img?.replace(/'/g, "\\'")}', ${JSON.stringify(release.artist.genres || []).replace(/'/g, "\\'")})" class="text-gray-600 hover:text-red-500 transition-colors">
+                        <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${release.artist.img?.replace(/'/g, "\\'")}', ${artistJson})" class="text-gray-600 hover:text-red-500 transition-colors">
                             <i class="fas fa-heart mr-1 ${this.isArtistInFavorites(release.artist.id) ? 'text-red-500' : ''}"></i>
                             <span>${this.isArtistInFavorites(release.artist.id) ? 'Gevolgd' : 'Volgen'}</span>
                         </button>
@@ -1620,350 +1642,14 @@ class UIService {
             
             container.appendChild(card);
         }
-    }
-    
-    /**
-     * Display track recommendations
-     */
-    displayTrackRecommendations(tracks) {
-        const container = document.getElementById('track-recommendations');
-        container.innerHTML = '';
         
-        if (!tracks || tracks.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-6">
-                    <p class="text-gray-500">Geen aanbevelingen beschikbaar. Volg eerst wat DJ's.</p>
-                </div>
-            `;
-            return;
+        // Add debug info in development mode
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+            const debugElement = document.createElement('div');
+            debugElement.className = 'mt-4 p-2 bg-gray-100 rounded text-xs';
+            debugElement.innerHTML = `<p class="text-gray-500">Debug info: Loaded ${preReleases.length} upcoming releases</p>`;
+            container.appendChild(debugElement);
         }
-        
-        // Create grid layout for tracks
-        const trackGrid = document.createElement('div');
-        trackGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
-        
-        for (const track of tracks) {
-            const audioFeatures = track.audioFeatures || {};
-            
-            // Get energy and danceability values
-            const energy = Math.round((audioFeatures.energy || 0) * 100);
-            const danceability = Math.round((audioFeatures.danceability || 0) * 100);
-            
-            const trackCard = document.createElement('div');
-            trackCard.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col';
-            
-            trackCard.innerHTML = `
-                <div class="relative">
-                    <img src="${track.album.images[0]?.url || 'img/placeholder-album.png'}" 
-                        alt="${track.name}" class="w-full h-48 object-cover">
-                    <button class="absolute bottom-2 right-2 bg-primary hover:bg-primary-dark text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors play-preview" data-preview-url="${track.preview_url || ''}">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-                <div class="p-4 flex-grow flex flex-col">
-                    <h4 class="font-bold line-clamp-2" title="${track.name}">${track.name}</h4>
-                    <p class="text-primary line-clamp-1" title="${track.artists.map(a => a.name).join(', ')}">
-                        ${track.artists.map(a => a.name).join(', ')}
-                    </p>
-                    <p class="text-sm text-gray-500">Album: ${track.album.name}</p>
-                    
-                    <div class="mt-auto pt-3">
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>Energy</span>
-                            <span>${energy}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${energy}%"></div>
-                        </div>
-                        
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>Danceability</span>
-                            <span>${danceability}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="bg-green-500 h-1.5 rounded-full" style="width: ${danceability}%"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="px-4 pb-4 pt-2 flex justify-between items-center">
-                    <a href="${track.external_urls?.spotify || '#'}" target="_blank" class="text-sm text-gray-600 hover:text-primary transition-colors">
-                        <i class="fab fa-spotify mr-1"></i>Open
-                    </a>
-                    
-                    <button class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded-full transition-colors add-to-collection" data-track-id="${track.id}">
-                        <i class="fas fa-plus mr-1"></i>Toevoegen
-                    </button>
-                </div>
-            `;
-            
-            // Add event listener for previews
-            const playButton = trackCard.querySelector('.play-preview');
-            playButton.addEventListener('click', (e) => {
-                const previewUrl = e.currentTarget.dataset.previewUrl;
-                
-                if (previewUrl) {
-                    this.playAudioPreview(previewUrl, track);
-                } else {
-                    this.showMessage('Geen preview beschikbaar voor dit nummer', 'info');
-                }
-            });
-            
-            const addButton = trackCard.querySelector('.add-to-collection');
-            addButton.addEventListener('click', () => {
-                this.showMessage(`${track.name} toegevoegd aan je collectie`, 'success');
-                // In a real app, you would save this to a collection
-            });
-            
-            trackGrid.appendChild(trackCard);
-        }
-        
-        container.appendChild(trackGrid);
-    }
-    
-    /**
-     * Helper to check if artist is in favorites
-     */
-    isArtistInFavorites(artistId) {
-        return app.favorites.some(fav => fav.id === artistId);
-    }
-    
-    /**
-     * Play audio preview
-     */
-    playAudioPreview(url, track) {
-        // If there's already a player, stop it
-        const existingPlayer = document.getElementById('audio-preview-player');
-        if (existingPlayer) {
-            existingPlayer.pause();
-            existingPlayer.remove();
-        }
-        
-        // Create a new audio element
-        const audio = document.createElement('audio');
-        audio.id = 'audio-preview-player';
-        audio.className = 'audio-player';
-        audio.src = url;
-        audio.autoplay = true;
-        
-        // Add metadata as data attributes for tracking
-        if (track) {
-            audio.dataset.artistId = track.artists[0]?.id || '';
-            audio.dataset.trackId = track.id || '';
-            audio.dataset.trackName = track.name || '';
-            audio.dataset.albumName = track.album?.name || '';
-        }
-        
-        // Add to document
-        document.body.appendChild(audio);
-        
-        // Show now playing message
-        this.showMessage(`Nu afspelend: ${track.name} - ${track.artists[0]?.name}`, 'info');
-    }
-
-    /**
-     * Create and display a preview player for a track
-     * @param {Object} track - The track object from Spotify API
-     */
-    createPreviewPlayer(track) {
-        // Check if preview URL exists
-        if (!track.preview_url) {
-            this.showMessage('Geen preview beschikbaar voor dit nummer', 'info');
-            return;
-        }
-        
-        // Stop any currently playing preview
-        this.stopCurrentPreview();
-        
-        // Create preview player container
-        const previewContainer = document.createElement('div');
-        previewContainer.id = 'preview-player-container';
-        previewContainer.className = 'fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg z-40 transform transition-transform duration-300';
-        
-        // Create audio element
-        const audio = document.createElement('audio');
-        audio.id = 'preview-player';
-        audio.className = 'audio-player';
-        audio.src = track.preview_url;
-        audio.dataset.artistId = track.artists[0]?.id || '';
-        audio.dataset.trackId = track.id || '';
-        audio.dataset.trackName = track.name || '';
-        audio.dataset.albumName = track.album?.name || '';
-        
-        // Create player UI
-        previewContainer.innerHTML = `
-            <div class="flex items-center p-3">
-                <div class="flex-shrink-0 mr-3">
-                    <img src="${track.album.images[0]?.url || 'img/placeholder-album.png'}" alt="${track.name}" class="w-12 h-12 rounded">
-                </div>
-                <div class="flex-1">
-                    <h4 class="font-medium line-clamp-1">${track.name}</h4>
-                    <p class="text-sm text-primary line-clamp-1">${track.artists.map(a => a.name).join(', ')}</p>
-                    
-                    <div class="flex items-center mt-2">
-                        <button id="preview-play-pause" class="text-primary mr-3">
-                            <i class="fas fa-pause"></i>
-                        </button>
-                        
-                        <div class="relative flex-1 h-2 bg-gray-200 rounded-full">
-                            <div id="preview-progress" class="absolute h-2 bg-primary rounded-full" style="width: 0%"></div>
-                        </div>
-                        
-                        <span id="preview-time" class="ml-3 text-xs text-gray-500">0:00 / 0:30</span>
-                    </div>
-                </div>
-                
-                <div class="ml-3">
-                    <button id="preview-close" class="text-gray-500 hover:text-gray-700">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="audio-visualizer px-3 pb-2" id="audio-visualizer">
-                ${Array.from({length: 30}, () => `<div class="audio-bar"></div>`).join('')}
-            </div>
-        `;
-        
-        // Add audio element to container
-        previewContainer.appendChild(audio);
-        
-        // Setup event listeners
-        this.setupPreviewPlayerEvents(audio);
-        
-        // Play the audio
-        audio.play();
-        
-        // Show the player with animation
-        setTimeout(() => {
-            previewContainer.classList.add('translate-y-0');
-        }, 10);
-    }
-    
-    /**
-     * Setup event listeners for preview player
-     * @param {HTMLAudioElement} audio - The audio element
-     */
-    setupPreviewPlayerEvents(audio) {
-        const playPauseBtn = document.getElementById('preview-play-pause');
-        const closeBtn = document.getElementById('preview-close');
-        const progressBar = document.getElementById('preview-progress');
-        const timeDisplay = document.getElementById('preview-time');
-        const visualizer = document.getElementById('audio-visualizer');
-        const bars = visualizer.querySelectorAll('.audio-bar');
-        
-        // Play/Pause button
-        playPauseBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-                playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            } else {
-                audio.pause();
-                playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
-        });
-        
-        // Close button
-        closeBtn.addEventListener('click', () => {
-            this.stopCurrentPreview();
-        });
-        
-        // Time update
-        audio.addEventListener('timeupdate', () => {
-            const currentTime = Math.floor(audio.currentTime);
-            const duration = Math.floor(audio.duration || 30);
-            const percent = (audio.currentTime / (audio.duration || 30)) * 100;
-            
-            // Update progress bar
-            progressBar.style.width = `${percent}%`;
-            
-            // Update time display
-            const currentMin = Math.floor(currentTime / 60);
-            const currentSec = currentTime % 60;
-            const durationMin = Math.floor(duration / 60);
-            const durationSec = duration % 60;
-            
-            timeDisplay.textContent = `${currentMin}:${currentSec.toString().padStart(2, '0')} / ${durationMin}:${durationSec.toString().padStart(2, '0')}`;
-            
-            // Update visualizer
-            this.updateVisualizer(bars, audio);
-        });
-        
-        // Ended event
-        audio.addEventListener('ended', () => {
-            playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        });
-    }
-    
-    /**
-     * Update the audio visualizer
-     * @param {NodeList} bars - The visualizer bars
-     * @param {HTMLAudioElement} audio - The audio element
-     */
-    updateVisualizer(bars, audio) {
-        if (!audio || !bars.length) return;
-        
-        // Create an array of random heights for the visualizer bars
-        // In a real app, this would use the Web Audio API to analyze the audio
-        const heights = Array.from({length: bars.length}, () => {
-            return audio.paused ? 0 : Math.floor(Math.random() * 25) + 5;
-        });
-        
-        // Apply heights to bars
-        bars.forEach((bar, index) => {
-            bar.style.height = `${heights[index]}px`;
-        });
-    }
-    
-    /**
-     * Stop and remove any currently playing preview
-     */
-    stopCurrentPreview() {
-        const container = document.getElementById('preview-player-container');
-        const audio = document.getElementById('preview-player');
-        
-        if (container) {
-            // First fade out
-            container.classList.remove('translate-y-0');
-            container.classList.add('translate-y-full');
-            
-            // Then remove after animation
-            setTimeout(() => {
-                if (audio) audio.pause();
-                container.remove();
-            }, 300);
-        }
-    }
-    
-    /**
-     * Create a play button for track previews
-     * @param {string} previewUrl - The preview URL from Spotify
-     * @param {Object} track - The track object
-     * @return {HTMLElement} - The play button element
-     */
-    createPlayButton(previewUrl, track) {
-        const button = document.createElement('button');
-        
-        if (previewUrl) {
-            button.className = 'preview-play-btn bg-primary hover:bg-primary-dark text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors';
-            button.innerHTML = '<i class="fas fa-play"></i>';
-            button.title = 'Speel preview';
-            
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.createPreviewPlayer(track);
-            });
-        } else {
-            button.className = 'preview-play-btn bg-gray-300 text-gray-500 rounded-full w-8 h-8 flex items-center justify-center cursor-not-allowed';
-            button.innerHTML = '<i class="fas fa-play"></i>';
-            button.title = 'Geen preview beschikbaar';
-            
-            button.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showMessage('Geen preview beschikbaar voor dit nummer', 'info');
-            });
-        }
-        
-        return button;
     }
 }
 

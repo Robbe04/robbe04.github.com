@@ -460,9 +460,9 @@ class MusicAlertApp {
         }
         
         try {
+            // Show loading indicator in both the overlay and pre-releases container
             ui.showLoading('Aankomende releases laden...');
             
-            // Show loading indicator in the pre-releases container
             const container = document.getElementById('pre-releases');
             if (container) {
                 container.innerHTML = `
@@ -475,33 +475,29 @@ class MusicAlertApp {
                 `;
             }
             
+            console.log('Fetching pre-releases...');
             const preReleases = await api.getPreReleases(this.favorites);
-            console.log('Pre-releases loaded:', preReleases);
+            console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
             
-            // Filter out releases that have already been released
-            const now = new Date();
-            const futureReleases = preReleases.filter(release => {
-                const releaseDate = new Date(release.releaseDate);
-                return releaseDate > now;
-            });
-            
-            console.log('Future releases filtered:', futureReleases.length);
-            ui.displayPreReleases(futureReleases);
+            ui.displayPreReleases(preReleases);
             ui.hideLoading();
         } catch (error) {
             ui.hideLoading();
             console.error('Error loading pre-releases:', error);
             
-            // Still display the error in the UI so users know what happened
+            // Display error message in the pre-releases container
             const container = document.getElementById('pre-releases');
             if (container) {
                 container.innerHTML = `
-                    <div class="text-center py-8">
+                    <div class="col-span-full text-center py-8">
                         <div class="text-red-500 mb-4">
-                            <i class="fas fa-exclamation-circle text-5xl"></i>
+                            <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
-                        <p class="text-gray-700 font-medium">Er is een fout opgetreden</p>
-                        <p class="text-gray-500 text-sm mt-2">Kon aankomende releases niet laden</p>
+                        <p class="text-gray-700">Er is een fout opgetreden bij het laden van aankomende releases</p>
+                        <p class="text-gray-500 text-sm mt-2">Probeer het later opnieuw</p>
+                        <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
+                            Opnieuw proberen
+                        </button>
                     </div>
                 `;
             }
