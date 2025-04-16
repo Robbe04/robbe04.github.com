@@ -6,17 +6,15 @@
     <title>MusicAlert - Volg je favoriete DJ's</title>
     
     <!-- PWA Support -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#6C4AE6">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MusicAlert">
-    <link rel="apple-touch-icon" href="img/icons/icon-152x152.png">
-    <link rel="icon" href="img/favicon.ico">
+    <link rel="apple-touch-icon" href="/img/icons/icon-152x152.png">
     
-    <!-- Replace CDN with local Tailwind -->
-    <link rel="stylesheet" href="css/tailwind.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -58,9 +56,7 @@
         }
         
         .hero-section {
-            /* Use a gradient as fallback if hero-bg.jpg is missing */
-            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), 
-                        linear-gradient(45deg, #6C4AE6, #1DD1B2);
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)), url('img/hero-bg.jpg');
             background-size: cover;
             background-position: center;
             min-height: 100vh;
@@ -988,9 +984,9 @@
         });
     </script>
 
-    <!-- Scripts in proper order to ensure ui is defined before app -->
-    <script src="js/ui.js"></script>
+    <!-- Scripts -->
     <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
     <script src="js/notifications.js"></script>
     <script src="js/app.js"></script>
     <script src="js/audio-enhancer.js"></script>
@@ -1515,10 +1511,5 @@
         const observer = new MutationObserver(updateLoadingDisplay);
         observer.observe(document.body, { childList: true, subtree: true });
     </script>
-    
-    <!-- Keyboard shortcut hint button -->
-    <div class="shortcut-hint" onclick="ui.showShortcutGuide()" title="Toetsenbord Snelkoppelingen (?)">
-        <i class="fas fa-keyboard"></i>
-    </div>
 </body>
 </html>
