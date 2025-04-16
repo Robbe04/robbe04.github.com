@@ -60,11 +60,23 @@ class MusicAlertApp {
     }
     
     /**
-     * Initialize the application
+     * Initialize the app
      */
     async initialize() {
-        // Initialize UI components
-        await ui.initialize();
+        console.log('Initializing MusicAlert app...');
+        
+        // Load favorites from storage
+        this.loadFavoritesFromStorage();
+        
+        // Ensure UI is available before using it
+        if (window.ui) {
+            await window.ui.initialize();
+        } else {
+            console.error('UI service not available');
+            // Create a fallback message
+            document.body.innerHTML = '<div style="text-align:center;padding:2rem;"><h1>Error Loading Application</h1><p>Please try refreshing the page.</p></div>';
+            return;
+        }
         
         // Check if favorites might have been lost and attempt recovery
         this.checkFavoritesIntegrity();
@@ -1032,9 +1044,16 @@ class MusicAlertApp {
 // Initialize app
 const app = new MusicAlertApp();
 
-// When DOM is loaded, initialize the app
+// Make sure app waits for DOM and UI to be ready
 document.addEventListener('DOMContentLoaded', () => {
-    app.initialize();
+    // Wait a moment to ensure UI is initialized
+    setTimeout(() => {
+        if (window.app) {
+            app.initialize().catch(err => {
+                console.error('App initialization failed:', err);
+            });
+        }
+    }, 100);
 });
 
 // Add event listeners for audio players

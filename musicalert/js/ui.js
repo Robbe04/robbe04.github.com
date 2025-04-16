@@ -8,9 +8,34 @@ class UIService {
         this.audioVisualizers = new Map();
         this.preSearchGenreFilters = [];
         this.currentTheme = localStorage.getItem('theme') || 'light';
+        this.shortcutGuideVisible = false;
 
-        // Initialize theme on startup
-        this.initializeTheme();
+        // Apply theme on startup instead of calling initializeTheme
+        this.applyTheme();
+    }
+
+    /**
+     * Apply current theme to the document
+     */
+    applyTheme() {
+        if (this.currentTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (this.currentTheme === 'system') {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Listen for changes in system preference
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (this.currentTheme === 'system') {
+                    if (e.matches) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                }
+            });
+        }
     }
 
     /**
@@ -25,6 +50,9 @@ class UIService {
         
         // Setup live search
         this.setupLiveSearch();
+        
+        // Initialize keyboard shortcuts
+        this.initKeyboardShortcuts();
         
         // Smooth scroll for navigation
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -58,6 +86,142 @@ class UIService {
         // Initialize mobile menu
         this.initializeMobileMenu();
     }
+
+    /**
+     * Initialize keyboard shortcuts
+     */
+    initKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts when user is typing in an input field or textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            // Show shortcut guide if user presses '?'
+            if (e.key === '?' && !this.shortcutGuideVisible) {
+                e.preventDefault();
+                this.showShortcutGuide();
+                return;
+            }
+            
+            // Escape key to close modals and the shortcut guide
+            if (e.key === 'Escape') {
+                this.hideShortcutGuide();
+                
+                // Also stop any playing audio
+                if (typeof this.stopCurrentPreview === 'function') {
+                    this.stopCurrentPreview();
+                }
+                
+                // Close any open modals
+                if (window.app && typeof app.closeQuickActions === 'function') {
+                    app.closeQuickActions();
+                }
+                return;
+            }
+            
+            // Only process other shortcuts if app is defined
+            if (!window.app) return;
+            
+            // Navigation shortcuts
+            if (e.key === 'f' || e.key === '1') {
+                e.preventDefault();
+                app.switchTab('favorites');
+                this.showShortcutToast('Naar Favorieten', 'f');
+            } else if (e.key === 'n' || e.key === '2') {
+                e.preventDefault();
+                app.switchTab('notifications');
+                this.showShortcutToast('Naar Nieuwe Releases', 'n');
+            } else if (e.key === 'p' || e.key === '3') {
+                e.preventDefault();
+                app.switchTab('pre-releases');
+                this.showShortcutToast('Naar Aankomende Releases', 'p');
+            } else if (e.key === 'r' || e.key === '4') {
+                e.preventDefault();
+                app.switchTab('recommendations');
+                this.showShortcutToast('Naar Aanbevelingen', 'r');
+            } else if (e.key === 'e' || e.key === '5') {
+                e.preventDefault();
+                if (typeof showEventsPanel === 'function') {
+                    showEventsPanel();
+                }
+                this.showShortcutToast('Naar Evenementen', 'e');
+            }
+            
+            // Search shortcut
+            if ((e.key === '/' || (e.ctrlKey && e.key === 'f')) && !e.shiftKey) {
+                e.preventDefault();
+                const searchInput = document.getElementById('artistInput');
+                if (searchInput) {
+                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    searchInput.focus();
+                    this.showShortcutToast('Zoeken', '/');
+                }
+            }
+        });
+    }
+
+    /**
+     * Update theme
+     */
+    updateTheme(theme) {
+        this.currentTheme = theme;
+        localStorage.setItem('theme', theme);
+        
+        // Remove existing theme class
+        document.documentElement.classList.remove('dark');
+        
+        // Apply theme changes
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (theme === 'system') {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+        
+        this.showMessage(`Thema gewijzigd naar ${theme === 'system' ? 'systeemvoorkeur' : theme === 'dark' ? 'donker' : 'licht'}`, 'success');
+    }
+
+    /**
+     * Show message toast
+     */
+    showMessage(message, type = 'info') {
+        // Create toast if it doesn't exist
+        let toast = document.getElementById('toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white shadow-lg transition-opacity duration-300 z-50 opacity-0';
+            document.body.appendChild(toast);
+        }
+        
+        // Set message and color based on type
+        toast.textContent = message;
+        if (type === 'error') {
+            toast.classList.add('bg-red-500');
+            toast.classList.remove('bg-green-500', 'bg-blue-500');
+        } else if (type === 'success') {
+            toast.classList.add('bg-green-500');
+            toast.classList.remove('bg-red-500', 'bg-blue-500');
+        } else {
+            toast.classList.add('bg-blue-500');
+            toast.classList.remove('bg-red-500', 'bg-green-500');
+        }
+        
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('opacity-100');
+        }, 10);
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 300);
+        }, 3000);
+    }
+
+    // Existing methods remain unchanged...
 
     /**
      * Setup pre-search genre filters
@@ -516,3 +680,4 @@ class UIService {
 
 // Initialize UI service
 const ui = new UIService();
+window.ui = ui; // Make accessible globally

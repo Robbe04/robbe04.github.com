@@ -1,0 +1,9 @@
+/* 
+ * Tailwind CSS v3.x Minified 
+ * This file should contain the compiled Tailwind CSS
+ * Instead of using CDN, this enables a proper production setup
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
