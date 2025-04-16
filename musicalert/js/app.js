@@ -60,43 +60,57 @@ class MusicAlertApp {
     }
     
     /**
-     * Initialize the application
+     * Initialize the app
      */
     async initialize() {
-        // Initialize UI components
-        await ui.initialize();
+        console.log('Initializing MusicAlert app...');
         
-        // Check if favorites might have been lost and attempt recovery
-        this.checkFavoritesIntegrity();
+        // Load favorites from storage
+        this.loadFavoritesFromStorage();
         
-        // Initialize sorting and filtering
-        ui.initializeSortingAndFiltering();
-        
-        // Initialize notifications
-        if (await notifications.init()) {
-            this.notificationsEnabled = await notifications.updateSubscriptionStatus();
-            ui.updateNotificationToggle(this.notificationsEnabled);
+        try {
+            // Ensure UI is available
+            if (typeof window.ui !== 'undefined') {
+                await window.ui.initialize();
+            } else {
+                console.error('UI service not available. Make sure ui.js is loaded first.');
+                return;
+            }
+            
+            // Check if favorites might have been lost and attempt recovery
+            this.checkFavoritesIntegrity();
+            
+            // Initialize sorting and filtering
+            ui.initializeSortingAndFiltering();
+            
+            // Initialize notifications
+            if (await notifications.init()) {
+                this.notificationsEnabled = await notifications.updateSubscriptionStatus();
+                ui.updateNotificationToggle(this.notificationsEnabled);
+            }
+            
+            // Display favorites and check for new releases
+            this.displayFavorites();
+            this.checkNewReleases();
+            
+            // Load recommendations based on favorites
+            if (this.favorites.length) {
+                this.loadRecommendations();
+                this.loadTrackRecommendations();
+                this.loadPreReleases();
+            }
+            
+            // Setup offline detection
+            this.setupOfflineDetection();
+            
+            // Handle shared content if any
+            this.handleSharedContent();
+            
+            // Setup audio player listeners for stats tracking
+            this.setupAudioPlayerTracking();
+        } catch (error) {
+            console.error('Error initializing app:', error);
         }
-        
-        // Display favorites and check for new releases
-        this.displayFavorites();
-        this.checkNewReleases();
-        
-        // Load recommendations based on favorites
-        if (this.favorites.length) {
-            this.loadRecommendations();
-            this.loadTrackRecommendations();
-            this.loadPreReleases();
-        }
-        
-        // Setup offline detection
-        this.setupOfflineDetection();
-        
-        // Handle shared content if any
-        this.handleSharedContent();
-        
-        // Setup audio player listeners for stats tracking
-        this.setupAudioPlayerTracking();
     }
     
     /**
@@ -1032,9 +1046,16 @@ class MusicAlertApp {
 // Initialize app
 const app = new MusicAlertApp();
 
-// When DOM is loaded, initialize the app
+// Make sure app waits for DOM and UI to be ready
 document.addEventListener('DOMContentLoaded', () => {
-    app.initialize();
+    // Add a short delay to make sure ui.js has initialized
+    setTimeout(() => {
+        if (window.app && window.ui) {
+            app.initialize();
+        } else {
+            console.error('Required components not loaded. Check script loading order.');
+        }
+    }, 100);
 });
 
 // Add event listeners for audio players
