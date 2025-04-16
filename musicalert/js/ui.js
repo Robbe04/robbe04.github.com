@@ -371,18 +371,503 @@ class UIService {
     }
 
     /**
+     * Display favorites with sorting and filtering options
+     */
+    displayFavorites(favorites) {
+        const container = document.getElementById('favorites');
+        const filterContainer = document.getElementById('favorites-filter-container');
+        
+        if (!favorites.length) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-heart text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Je hebt nog geen DJ's gevolgd</p>
+                    <p class="text-gray-500 text-sm mt-2">Zoek naar artiesten en voeg ze toe aan je favorieten</p>
+                </div>
+            `;
+            
+            // Hide filter options when no favorites
+            if (filterContainer) filterContainer.classList.add('hidden');
+            return;
+        }
+        
+        // Show filter options when we have favorites
+        if (filterContainer) filterContainer.classList.remove('hidden');
+        
+        // Deep copy the favorites array to avoid mutating the original
+        let sortedFavorites = JSON.parse(JSON.stringify(favorites));
+        
+        // Get current sort order
+        const sortOrder = document.getElementById('favorites-sort')?.value || 'name-asc';
+        
+        // Sort according to selected option
+        switch (sortOrder) {
+            case 'name-asc':
+                sortedFavorites.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'name-desc':
+                sortedFavorites.sort((a, b) => b.name.localeCompare(a.name));
+                break;
+            case 'recent':
+                // If we have added timestamp, use it, otherwise keep original order
+                sortedFavorites.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+                break;
+            default:
+                // Default to alphabetical
+                sortedFavorites.sort((a, b) => a.name.localeCompare(b.name));
+        }
+        
+        // Apply search filter if there's text in the search input
+        const searchQuery = document.getElementById('favorites-search')?.value?.trim().toLowerCase();
+        if (searchQuery) {
+            sortedFavorites = sortedFavorites.filter(artist => 
+                artist.name.toLowerCase().includes(searchQuery)
+            );
+        }
+        
+        // If no results after filtering
+        if (sortedFavorites.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-search text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Geen DJ's gevonden die overeenkomen met "${searchQuery}"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        
+        sortedFavorites.forEach(artist => {
+            html += `
+                <div class="artist-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col animate__animated animate__fadeIn">
+                    <div class="h-40 bg-gray-200 overflow-hidden relative">
+                        <div class="is-favorite">
+                            <i class="fas fa-heart"></i> Gevolgd
+                        </div>
+                        ${artist.img ? 
+                            `<img src="${artist.img}" alt="${artist.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent h-20"></div>
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col">
+                        <h3 class="font-bold text-lg mb-1 truncate">${artist.name}</h3>
+                        ${artist.genres ? 
+                            `<p class="text-gray-600 text-sm mb-3 truncate">${this.formatGenreName(artist.genres[0] || '')}</p>` : 
+                            '<p class="text-gray-600 text-sm mb-3">DJ / Producer</p>'
+                        }
+                        <div class="mt-auto flex gap-2">
+                            <button onclick="app.getLatestTracks('${artist.id}')" 
+                                class="flex-1 bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition flex items-center justify-center">
+                                <i class="fas fa-headphones mr-2"></i>Muziek
+                            </button>
+                            <button onclick="app.toggleFavorite('${artist.id}')" 
+                                class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition">
+                                <i class="fas fa-heart-broken"></i>
+                            </button>
+                            <button onclick="app.shareArtist('${artist.name}')"
+                                class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    /**
+     * Display notifications of new releases
+     */
+    displayNotifications(releases) {
+        const container = document.getElementById('notifications');
+        const filterContainer = document.getElementById('notifications-filter-container');
+        
+        if (!releases.length) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-bell text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Geen nieuwe releases (< ${app.releaseAgeDays || 7} dagen) gevonden van je gevolgde DJ's</p>
+                    <p class="text-gray-500 text-sm mt-2">We laten het je weten wanneer er nieuwe muziek uitkomt</p>
+                </div>
+            `;
+            
+            // Hide filter options when no releases
+            if (filterContainer) filterContainer.classList.add('hidden');
+            return;
+        }
+        
+        // Show filter options when we have releases
+        if (filterContainer) filterContainer.classList.remove('hidden');
+        
+        // Create a flattened list of releases for easier sorting
+        let flatReleases = [];
+        
+        releases.forEach(release => {
+            flatReleases.push({
+                artist: release.artist,
+                album: release.album,
+                collaborationInfo: release.collaborationInfo,
+                releaseDate: new Date(release.album.release_date).getTime()
+            });
+        });
+        
+        // Get sort order
+        const sortOrder = document.getElementById('notifications-sort')?.value || 'date-desc';
+        
+        // Sort according to selected option
+        switch (sortOrder) {
+            case 'date-desc': // Newest first (default)
+                flatReleases.sort((a, b) => b.releaseDate - a.releaseDate);
+                break;
+            case 'date-asc': // Oldest first
+                flatReleases.sort((a, b) => a.releaseDate - b.releaseDate);
+                break;
+            case 'artist-asc': // Artist name A-Z
+                flatReleases.sort((a, b) => a.artist.name.localeCompare(b.artist.name));
+                break;
+            case 'artist-desc': // Artist name Z-A
+                flatReleases.sort((a, b) => b.artist.name.localeCompare(a.artist.name));
+                break;
+            default:
+                flatReleases.sort((a, b) => b.releaseDate - a.releaseDate);
+        }
+        
+        // Apply search filter if there's text in the search input
+        const searchQuery = document.getElementById('notifications-search')?.value?.trim().toLowerCase();
+        if (searchQuery) {
+            flatReleases = flatReleases.filter(release => {
+                // Search in artist name, album name, and collaborators
+                const artistNameMatch = release.artist.name.toLowerCase().includes(searchQuery);
+                const albumNameMatch = release.album.name.toLowerCase().includes(searchQuery);
+                
+                // Check collaborator names if this is a collaboration
+                let collaboratorMatch = false;
+                if (release.collaborationInfo && release.collaborationInfo.isCollaboration) {
+                    collaboratorMatch = release.collaborationInfo.collaboratingArtists.some(
+                        artist => artist.toLowerCase().includes(searchQuery)
+                    );
+                }
+                
+                return artistNameMatch || albumNameMatch || collaboratorMatch;
+            });
+        }
+        
+        // If no results after filtering
+        if (flatReleases.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-search text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Geen releases gevonden die overeenkomen met "${searchQuery}"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Display as a list
+        let html = '<div class="space-y-4">';
+        
+        flatReleases.forEach(release => {
+            const { artist, album, collaborationInfo } = release;
+            const releaseDate = new Date(album.release_date).toLocaleDateString('nl-NL');
+            const daysAgo = Math.floor((Date.now() - new Date(album.release_date).getTime()) / (1000 * 60 * 60 * 24));
+            const releaseDateText = daysAgo === 0 ? 'Vandaag' : daysAgo === 1 ? 'Gisteren' : `${daysAgo} dagen geleden`;
+            
+            // Create collaboration display text if needed
+            let collaborationText = '';
+            if (collaborationInfo && collaborationInfo.isCollaboration) {
+                const otherArtists = collaborationInfo.collaboratingArtists;
+                collaborationText = otherArtists.length === 1 
+                    ? `met ${otherArtists[0]}` 
+                    : `met ${otherArtists.slice(0, -1).join(', ')} & ${otherArtists.slice(-1)}`;
+            }
+            
+            html += `
+                <div class="bg-white p-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 animate__animated animate__fadeIn">
+                    <div class="flex items-start">
+                        <img src="${album.images[0]?.url || ''}" alt="${album.name}" class="w-20 h-20 mr-4 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <div class="flex md:flex-row flex-col justify-between md:items-start">
+                                <div class="flex-1 min-w-0 pr-2">
+                                    <div class="flex flex-wrap items-center gap-x-1 gap-y-0">
+                                        <p class="font-bold text-lg">${artist.name}</p>
+                                        ${collaborationText ? 
+                                            `<span class="text-xs bg-primary bg-opacity-20 text-primary-dark px-2 py-0.5 rounded-full">
+                                                ${collaborationText}
+                                            </span>` : 
+                                            ''
+                                        }
+                                    </div>
+                                    <p class="text-primary-dark font-medium">${album.name}</p>
+                                </div>
+                                <div class="flex flex-col items-end">
+                                    <span class="text-sm bg-secondary-light text-secondary-dark px-2 py-1 rounded-full">
+                                        ${releaseDate}
+                                    </span>
+                                    <span class="text-xs text-gray-500 mt-1">${releaseDateText}</span>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-3">
+                                ${album.album_type.charAt(0).toUpperCase() + album.album_type.slice(1)} • ${album.total_tracks} ${album?.total_tracks == '1' ? 'nummer' : 'nummers'}
+                            </p>
+                            <div class="flex gap-2">
+                                <a href="${album.external_urls.spotify}" target="_blank" 
+                                  class="flex-1 text-center bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition">
+                                  <i class="fab fa-spotify mr-2"></i>Beluisteren
+                                </a>
+                                <button onclick="app.getLatestTracks('${artist.id}')" 
+                                  class="flex-1 bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition">
+                                  Meer bekijken
+                                </button>
+                                <button onclick="app.shareRelease('${artist.name}', '${album.name}', '${album.external_urls.spotify}')" 
+                                  class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
+                                  <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    /**
+     * Initialize sorting and filtering for favorites and notifications
+     */
+    initializeSortingAndFiltering() {
+        // Favorite artists sorting
+        const favoritesSort = document.getElementById('favorites-sort');
+        if (favoritesSort) {
+            favoritesSort.addEventListener('change', () => {
+                app.displayFavorites();
+            });
+        }
+        
+        // Favorite artists search
+        const favoritesSearch = document.getElementById('favorites-search');
+        if (favoritesSearch) {
+            let debounceTimer;
+            favoritesSearch.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    app.displayFavorites();
+                }, 300);
+            });
+        }
+        
+        // Notifications sorting
+        const notificationsSort = document.getElementById('notifications-sort');
+        if (notificationsSort) {
+            notificationsSort.addEventListener('change', () => {
+                app.checkNewReleases();
+            });
+        }
+        
+        // Notifications search
+        const notificationsSearch = document.getElementById('notifications-search');
+        if (notificationsSearch) {
+            let debounceTimer;
+            notificationsSearch.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    app.checkNewReleases();
+                }, 300);
+            });
+        }
+        
+        // Initialize release age setting
+        this.initializeReleaseAgeSetting();
+    }
+
+    /**
+     * Initialize release age setting
+     */
+    initializeReleaseAgeSetting() {
+        const releaseAgeInput = document.getElementById('release-age');
+        const releaseAgeApplyBtn = document.getElementById('release-age-apply');
+        
+        if (releaseAgeInput && releaseAgeApplyBtn) {
+            // Set initial value from app settings
+            releaseAgeInput.value = app.releaseAgeDays;
+            
+            // Apply button click handler
+            releaseAgeApplyBtn.addEventListener('click', () => {
+                const days = parseInt(releaseAgeInput.value);
+                app.setReleaseAgeDays(days);
+            });
+            
+            // Also apply when pressing Enter in the input
+            releaseAgeInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const days = parseInt(releaseAgeInput.value);
+                    app.setReleaseAgeDays(days);
+                }
+            });
+            
+            // Validate input on blur (when leaving the field)
+            releaseAgeInput.addEventListener('blur', () => {
+                let days = parseInt(releaseAgeInput.value);
+                
+                if (isNaN(days) || days < 1) {
+                    days = 7; // Reset to default
+                } else if (days > 14) {
+                    days = 14; // Cap at 14
+                }
+                
+                releaseAgeInput.value = days;
+            });
+        }
+    }
+
+    /**
+     * Show loading indicator
+     */
+    showLoading(message = 'Laden...') {
+        // Use inline loading instead of overlay for artist searching
+        if (message.includes('Artiesten zoeken')) {
+            const searchInput = document.getElementById('artistInput');
+            const loadingIndicator = document.getElementById('searchLoadingIndicator');
+            
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            } else {
+                // Create inline loading indicator if it doesn't exist
+                const indicator = document.createElement('div');
+                indicator.id = 'searchLoadingIndicator';
+                indicator.className = 'absolute right-4 top-1/2 transform -translate-y-1/2 text-primary';
+                indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                searchInput.parentNode.appendChild(indicator);
+            }
+            return;
+        }
+        
+        // For other operations, use the overlay
+        const overlay = document.getElementById('loading-overlay');
+        const text = document.getElementById('loading-text');
+        text.textContent = message;
+        overlay.classList.remove('hidden');
+    }
+
+    /**
+     * Hide loading indicator
+     */
+    hideLoading() {
+        // Hide search loading indicator if present
+        const searchLoadingIndicator = document.getElementById('searchLoadingIndicator');
+        if (searchLoadingIndicator) {
+            searchLoadingIndicator.classList.add('hidden');
+        }
+        
+        // Hide overlay
+        const overlay = document.getElementById('loading-overlay');
+        overlay.classList.add('hidden');
+    }
+
+    /**
+     * Show error message
+     */
+    showError(message) {
+        alert(message);
+    }
+
+    /**
+     * Show message toast
+     */
+    showMessage(message, type = 'info') {
+        // Create toast if it doesn't exist
+        let toast = document.getElementById('toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white shadow-lg transition-opacity duration-300 z-50 opacity-0';
+            document.body.appendChild(toast);
+        }
+        
+        // Set message and color based on type
+        toast.textContent = message;
+        if (type === 'error') {
+            toast.classList.add('bg-red-500');
+            toast.classList.remove('bg-green-500', 'bg-blue-500');
+        } else if (type === 'success') {
+            toast.classList.add('bg-green-500');
+            toast.classList.remove('bg-red-500', 'bg-blue-500');
+        } else {
+            toast.classList.add('bg-blue-500');
+            toast.classList.remove('bg-red-500', 'bg-green-500');
+        }
+        
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('opacity-100');
+        }, 10);
+        
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+            }, 300);
+        }, 3000);
+    }
+
+    /**
+     * Update notification toggle button based on subscription status
+     */
+    updateNotificationToggle(isSubscribed) {
+        const notificationToggle = document.getElementById('notification-toggle');
+        const notificationSettings = document.getElementById('notification-settings');
+        
+        if (notificationToggle) {
+            if (isSubscribed) {
+                notificationToggle.innerHTML = '<i class="fas fa-bell mr-2"></i>Notificaties uitschakelen';
+                notificationToggle.classList.remove('bg-primary');
+                notificationToggle.classList.add('bg-gray-500');
+            } else {
+                notificationToggle.innerHTML = '<i class="far fa-bell mr-2"></i>Notificaties inschakelen';
+                notificationToggle.classList.remove('bg-gray-500');
+                notificationToggle.classList.add('bg-primary');
+            }
+        }
+        
+        if (notificationSettings) {
+            if (isSubscribed) {
+                notificationSettings.innerHTML = '<i class="fas fa-bell mr-2"></i>Notificaties Uitschakelen';
+                notificationSettings.classList.remove('bg-primary');
+                notificationSettings.classList.add('bg-gray-500');
+            } else {
+                notificationSettings.innerHTML = '<i class="far fa-bell mr-2"></i>Notificaties Inschakelen';
+                notificationSettings.classList.remove('bg-gray-500');
+                notificationSettings.classList.add('bg-primary');
+            }
+        }
+        
+        // Update mobile button
+        this.updateMobileNotificationButton(isSubscribed);
+    }
+
+    /**
      * Load and display genre filters
      */
     async loadGenreFilters() {
         const container = document.getElementById('genreFilters');
         
         try {
-            // Skip if the container doesn't exist
-            if (!container) {
-                console.log('Genre filter container not found, skipping');
-                return;
-            }
-            
             const genres = await api.getGenres();
             
             // Filter to get mostly electronic and DJ-related genres
@@ -408,109 +893,781 @@ class UIService {
                 container.appendChild(button);
             });
         } catch (error) {
-            // Handle error gracefully
-            if (container) {
-                container.innerHTML = '<span class="text-red-500">Fout bij het laden van genres</span>';
-            }
+            container.innerHTML = '<span class="text-red-500">Fout bij het laden van genres</span>';
             console.error('Error loading genres:', error);
         }
     }
 
     /**
-     * Display track recommendations
+     * Format genre name for display
      */
-    displayTrackRecommendations(tracks) {
-        const container = document.getElementById('track-recommendations');
-        // Early exit if container doesn't exist
-        if (!container) {
-            console.warn('Track recommendations container not found');
+    formatGenreName(genre) {
+        return genre
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
+    /**
+     * Toggle a genre filter display
+     */
+    toggleGenreFilter(button) {
+        const genre = button.dataset.genre;
+        
+        if (this.activeGenreFilters.includes(genre)) {
+            this.activeGenreFilters = this.activeGenreFilters.filter(g => g !== genre);
+            button.classList.remove('bg-primary', 'text-white');
+            button.classList.add('bg-gray-200');
+        } else {
+            this.activeGenreFilters.push(genre);
+            button.classList.remove('bg-gray-200');
+            button.classList.add('bg-primary', 'text-white');
+        }
+        
+        // If we have an artist search results, filter them
+        if (app.lastSearchResults && app.lastSearchResults.length) {
+            this.updateArtistSelectWithFilters(app.lastSearchResults);
+        }
+    }
+
+    /**
+     * Update artist select dropdown with filtered results
+     */
+    updateArtistSelectWithFilters(artists) {
+        const select = document.getElementById('artistSelect');
+        select.innerHTML = '<option value="">Selecteer een artiest</option>';
+        
+        // If no filters active, show all artists
+        if (this.activeGenreFilters.length === 0) {
+            artists.forEach(artist => {
+                this.addArtistToSelect(select, artist);
+            });
             return;
         }
-        container.innerHTML = '';
         
-        if (!tracks || tracks.length === 0) {
+        // Filter artists by genre
+        const filteredArtists = artists.filter(artist => {
+            if (!artist.genres || artist.genres.length === 0) return false;
+            
+            return artist.genres.some(genre => 
+                this.activeGenreFilters.some(filter => genre.includes(filter))
+            );
+        });
+        
+        // Add filtered artists to select
+        if (filteredArtists.length) {
+            filteredArtists.forEach(artist => {
+                this.addArtistToSelect(select, artist);
+            });
+        } else {
+            // If no matches, add an option indicating that
+            const option = document.createElement('option');
+            option.disabled = true;
+            option.textContent = 'Geen artiesten gevonden met deze genres';
+            select.appendChild(option);
+        }
+    }
+
+    /**
+     * Add artist to select dropdown
+     */
+    addArtistToSelect(select, artist) {
+        const option = document.createElement('option');
+        option.value = artist.id;
+        option.textContent = artist.name;
+        option.dataset.img = artist.images.length > 0 ? artist.images[0].url : '';
+        option.dataset.popularity = artist.popularity || 0;
+        option.dataset.genres = artist.genres ? artist.genres.join(',') : '';
+        select.appendChild(option);
+    }
+
+    /**
+     * Display recommended artists
+     */
+    displayRecommendations(artists) {
+        const container = document.getElementById('recommendations');
+        
+        if (!artists.length) {
             container.innerHTML = `
-                <div class="col-span-full text-center py-6">
-                    <p class="text-gray-500">Geen aanbevelingen beschikbaar. Volg eerst wat DJ's.</p>
+                <div class="col-span-full text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-magic text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Volg eerst enkele DJ's om aanbevelingen te krijgen</p>
                 </div>
             `;
             return;
         }
         
-        // Create grid layout for tracks
-        const trackGrid = document.createElement('div');
-        trackGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+        let html = '';
         
-        for (const track of tracks) {
-            const audioFeatures = track.audioFeatures || {};
+        artists.forEach(artist => {
+            const isFavorite = app.favorites.some(fav => fav.id === artist.id);
             
-            // Get energy and danceability values
-            const energy = Math.round((audioFeatures.energy || 0.5) * 100);
-            const danceability = Math.round((audioFeatures.danceability || 0.5) * 100);
-            
-            const trackCard = document.createElement('div');
-            trackCard.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col';
-            
-            trackCard.innerHTML = `
-                <div class="relative">
-                    <img src="${track.album?.images?.[0]?.url || 'img/placeholder-album.png'}" 
-                        alt="${track.name}" class="w-full h-48 object-cover">
-                    <button class="absolute bottom-2 right-2 bg-primary hover:bg-primary-dark text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors preview-play-btn" 
-                        data-preview-url="${track.preview_url || ''}" 
-                        data-track-id="${track.id || ''}"
-                        data-track-name="${track.name || 'Unknown Track'}"
-                        data-artist-name="${track.artists?.[0]?.name || 'Unknown Artist'}"
-                        data-artist-id="${track.artists?.[0]?.id || ''}"
-                        data-album-name="${track.album?.name || 'Unknown Album'}"
-                        data-album-id="${track.album?.id || ''}"
-                        data-album-image="${track.album?.images?.[0]?.url || ''}">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-                <div class="p-4 flex-grow flex flex-col">
-                    <h4 class="font-bold line-clamp-2" title="${track.name}">${track.name}</h4>
-                    <p class="text-primary line-clamp-1" title="${track.artists?.map(a => a.name).join(', ') || ''}">
-                        ${track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'}
-                    </p>
-                    <p class="text-sm text-gray-500">Album: ${track.album?.name || 'Unknown'}</p>
-                    
-                    <div class="mt-auto pt-3">
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>Energy</span>
-                            <span>${energy}%</span>
+            html += `
+                <div class="artist-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col animate__animated animate__fadeIn">
+                    <div class="h-40 bg-gray-200 overflow-hidden relative">
+                        ${artist.images.length ? 
+                            `<img src="${artist.images[0].url}" alt="${artist.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent h-20"></div>
+                    </div>
+                    <div class="p-4 flex-grow flex flex-col">
+                        <h3 class="font-bold text-lg mb-1 truncate">${artist.name}</h3>
+                        <p class="text-gray-600 text-sm mb-1 truncate">
+                            ${artist.genres.length ? this.formatGenreName(artist.genres[0]) : 'DJ / Producer'}
+                        </p>
+                        <div class="flex items-center mb-3">
+                            <div class="text-yellow-500 mr-1">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <span class="text-sm text-gray-600">${artist.popularity}% populariteit</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${energy}%"></div>
-                        </div>
-                        
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>Danceability</span>
-                            <span>${danceability}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-1.5">
-                            <div class="bg-green-500 h-1.5 rounded-full" style="width: ${danceability}%"></div>
+                        <div class="mt-auto flex gap-2">
+                            <button onclick="app.getLatestTracks('${artist.id}')" 
+                                class="flex-1 bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition flex items-center justify-center">
+                                <i class="fas fa-headphones mr-2"></i>Ontdekken
+                            </button>
+                            <button onclick="app.toggleFavorite('${artist.id}', '${artist.name}', '${artist.images.length ? artist.images[0].url : ''}')" 
+                                class="${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} p-2 rounded-lg transition">
+                                <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'}"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    /**
+     * Display latest tracks
+     */
+    displayLatestTracks(artist, albums, relatedArtists = []) {
+        const resultsContainer = document.getElementById('results');
+        const artistImg = artist.images.length > 0 ? artist.images[0].url : '';
+        const artistGenres = artist.genres.length ? 
+            artist.genres.map(genre => this.formatGenreName(genre)).join(', ') : 
+            'DJ / Producer';
+        const isFavorite = app.favorites.some(fav => fav.id === artist.id);
+        
+        let html = `
+            <div class="animate__animated animate__fadeIn">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
+                    <div class="w-48 h-48 rounded-xl overflow-hidden flex-shrink-0 relative">
+                        ${isFavorite ? 
+                            `<div class="is-favorite">
+                                <i class="fas fa-heart"></i> Gevolgd
+                            </div>` : ''
+                        }
+                        ${artistImg ? 
+                            `<img src="${artistImg}" alt="${artist.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                            <h2 class="text-3xl font-bold text-primary mb-2 md:mb-0">${artist.name}</h2>
+                            <button onclick="app.toggleFavorite('${artist.id}', '${artist.name}', '${artistImg}')" 
+                                class="inline-flex items-center justify-center px-4 py-2 rounded-lg ${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark'} text-white transition self-center md:self-auto">
+                                <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'} mr-2"></i>
+                                ${isFavorite ? 'Niet meer volgen' : 'Volgen'}
+                            </button>
+                        </div>
+                        <p class="text-gray-600 mb-4">${artistGenres}</p>
+                        <div class="flex items-center justify-center md:justify-start mb-4">
+                            <div class="text-yellow-500 mr-2">
+                                ${this.getPopularityStars(artist.popularity)}
+                            </div>
+                            <span class="text-sm text-gray-600">${artist.popularity}% populariteit</span>
+                        </div>
+                        <p class="text-gray-600">
+                            ${artist.followers.total.toLocaleString('nl-NL')} volgers op Spotify
+                        </p>
+                        <div class="mt-4">
+                            <a href="${artist.external_urls.spotify}" target="_blank" 
+                               class="inline-flex items-center text-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
+                               <i class="fab fa-spotify mr-2"></i>Bekijk op Spotify
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold mb-6 text-primary">Nieuwste Releases</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        `;
+        
+        albums.forEach(album => {
+            const releaseDate = new Date(album.release_date).toLocaleDateString('nl-NL');
+            const previewTrack = album.tracks.items.find(track => track.preview_url);
+            
+            html += `
+                <div class="album-card bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 animate__animated animate__fadeIn">
+                    <div class="relative h-48 bg-gray-200 overflow-hidden">
+                        ${album.images.length ? 
+                            `<img src="${album.images[0].url}" alt="${album.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                            <span class="text-xs font-medium text-white bg-primary bg-opacity-90 rounded-full px-2 py-1">
+                                ${album.album_type.toUpperCase()}
+                            </span>
+                            <span class="text-xs font-medium text-white ml-2">${releaseDate}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-lg mb-1">${album.name}</h4>
+                        <p class="text-gray-600 text-sm mb-3">${album.total_tracks} nummers</p>
+                        ${previewTrack ? `
+                            <div class="mb-4">
+                                <div class="audio-visualizer" id="visualizer-${previewTrack.id}" data-track-id="${previewTrack.id}">
+                                    ${Array(20).fill().map(() => `<div class="audio-bar" style="height: ${5 + Math.random() * 25}px;"></div>`).join('')}
+                                </div>
+                                <audio 
+                                    id="audio-${previewTrack.id}" 
+                                    class="w-full audio-player" 
+                                    src="${previewTrack.preview_url}" 
+                                    data-track-id="${previewTrack.id}"
+                                    controls
+                                    data-artist-id="${artist.id}"
+                                    data-album-name="${album.name}"
+                                    data-track-name="${previewTrack.name}"
+                                ></audio>
+                            </div>
+                        ` : `
+                            <p class="text-red-500 mb-4 text-sm">Preview niet beschikbaar</p>
+                        `}
+                        <div class="flex gap-2 mb-2">
+                            <a href="${album.external_urls.spotify}" target="_blank" 
+                               class="flex-1 text-center bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition">
+                               <i class="fab fa-spotify mr-2"></i>Beluisteren
+                            </a>
+                            <button onclick="app.shareRelease('${artist.name}', '${album.name}', '${album.external_urls.spotify}')" 
+                               class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
+                               <i class="fas fa-share-alt"></i>Delen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+        `;
+        
+        // Add related artists section
+        if (relatedArtists && relatedArtists.length > 0) {
+            html += `
+                <h3 class="text-2xl font-bold my-6 text-primary">Vergelijkbare DJ's</h3>
+                <div class="flex overflow-x-auto pb-4 space-x-4 related-artists-scroll">
+            `;
+            
+            relatedArtists.forEach(relArtist => {
+                const isFavorite = app.favorites.some(fav => fav.id === relArtist.id);
                 
-                <div class="px-4 pb-4 pt-2 flex justify-between items-center">
-                    <a href="${track.external_urls?.spotify || '#'}" target="_blank" class="text-sm text-gray-600 hover:text-primary transition-colors">
-                        <i class="fab fa-spotify mr-1"></i>Open
-                    </a>
-                    
-                    <button class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded-full transition-colors add-to-collection" data-track-id="${track.id || ''}">
-                        <i class="fas fa-plus mr-1"></i>Toevoegen
+                html += `
+                    <div class="flex-shrink-0 w-48 bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="h-48 bg-gray-200 overflow-hidden relative">
+                            ${relArtist.images.length ? 
+                                `<img src="${relArtist.images[0].url}" alt="${relArtist.name}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                    <i class="fas fa-music text-4xl"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div class="p-3">
+                            <h4 class="font-bold truncate">${relArtist.name}</h4>
+                            <p class="text-gray-600 text-xs mb-2 truncate">
+                                ${relArtist.genres.length ? this.formatGenreName(relArtist.genres[0]) : 'DJ / Producer'}
+                            </p>
+                            <div class="flex gap-1">
+                                <button onclick="app.getLatestTracks('${relArtist.id}')" 
+                                    class="flex-1 bg-primary hover:bg-primary-dark text-white py-1 text-sm rounded-lg transition">
+                                    Verkennen
+                                </button>
+                                <button onclick="app.toggleFavorite('${relArtist.id}', '${relArtist.name}', '${relArtist.images.length ? relArtist.images[0].url : ''}')" 
+                                    class="${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} p-1 rounded-lg transition">
+                                    <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+        }
+        
+        resultsContainer.innerHTML = html;
+        
+        // Initialize audio visualizers
+        this.initAudioVisualizers();
+    }
+
+    /**
+     * Generate star rating based on popularity
+     */
+    getPopularityStars(popularity) {
+        const starCount = Math.round(popularity / 20);
+        let stars = '';
+        
+        for (let i = 0; i < 5; i++) {
+            if (i < starCount) {
+                stars += '<i class="fas fa-star"></i>';
+            } else {
+                stars += '<i class="far fa-star"></i>';
+            }
+        }
+        
+        return stars;
+    }
+
+    /**
+     * Initialize audio visualizers for tracks
+     */
+    initAudioVisualizers() {
+        document.querySelectorAll('.audio-player').forEach(audio => {
+            const trackId = audio.dataset.trackId;
+            const visualizer = document.getElementById(`visualizer-${trackId}`);
+            
+            if (!visualizer) return;
+            
+            audio.addEventListener('play', () => {
+                this.startVisualizer(trackId);
+                
+                // Pause other audio players
+                document.querySelectorAll('.audio-player').forEach(otherAudio => {
+                    if (otherAudio !== audio && !otherAudio.paused) {
+                        otherAudio.pause();
+                    }
+                });
+            });
+            
+            audio.addEventListener('pause', () => {
+                this.stopVisualizer(trackId);
+            });
+            
+            audio.addEventListener('ended', () => {
+                this.stopVisualizer(trackId);
+            });
+        });
+    }
+
+    /**
+     * Setup mutation observer for audio visualizers
+     */
+    setupAudioVisualizerObserver() {
+        // Watch for new audio players being added to the DOM
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.addedNodes.length) {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            const audioPlayers = node.querySelectorAll('.audio-player');
+                            if (audioPlayers.length) {
+                                this.initAudioVisualizers();
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    /**
+     * Start audio visualizer animation
+     */
+    startVisualizer(trackId) {
+        const visualizer = document.getElementById(`visualizer-${trackId}`);
+        if (!visualizer) return;
+        
+        const bars = visualizer.querySelectorAll('.audio-bar');
+        
+        // Stop existing animation if there is one
+        if (this.audioVisualizers.has(trackId)) {
+            cancelAnimationFrame(this.audioVisualizers.get(trackId));
+        }
+        
+        const animate = () => {
+            bars.forEach(bar => {
+                const height = 5 + Math.random() * 25;
+                bar.style.height = `${height}px`;
+            });
+            this.audioVisualizers.set(trackId, requestAnimationFrame(animate));
+        };
+        
+        this.audioVisualizers.set(trackId, requestAnimationFrame(animate));
+    }
+
+    /**
+     * Stop audio visualizer animation
+     */
+    stopVisualizer(trackId) {
+        if (this.audioVisualizers.has(trackId)) {
+            cancelAnimationFrame(this.audioVisualizers.get(trackId));
+            this.audioVisualizers.delete(trackId);
+            
+            // Reset visualizer bars
+            const visualizer = document.getElementById(`visualizer-${trackId}`);
+            if (visualizer) {
+                const bars = visualizer.querySelectorAll('.audio-bar');
+                bars.forEach(bar => {
+                    bar.style.height = '5px';
+                });
+            }
+        }
+    }
+
+    /**
+     * Initialize mobile menu
+     */
+    initializeMobileMenu() {
+        const mobileButton = document.getElementById('mobile-quick-actions');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        if (mobileButton && mobileMenu) {
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenu.contains(e.target) && 
+                    e.target !== mobileButton &&
+                    !mobileButton.contains(e.target) && 
+                    !mobileMenu.classList.contains('hidden')) {
+                    app.closeQuickActions();
+                }
+            });
+            
+            // Update mobile notification button
+            this.updateMobileNotificationButton(this.notificationsEnabled);
+        }
+    }
+
+    /**
+     * Update mobile notification button
+     */
+    updateMobileNotificationButton(isSubscribed) {
+        const mobileIcon = document.getElementById('mobile-notification-icon');
+        const mobileText = document.getElementById('mobile-notification-text');
+        
+        if (mobileIcon && mobileText) {
+            if (isSubscribed) {
+                mobileIcon.className = 'fas fa-bell mr-3 text-blue-500';
+                mobileText.textContent = 'Notificaties Uitschakelen';
+            } else {
+                mobileIcon.className = 'far fa-bell mr-3 text-blue-500';
+                mobileText.textContent = 'Notificaties Inschakelen';
+            }
+        }
+    }
+
+    /**
+     * Initialize theme
+     */
+    initializeTheme() {
+        if (this.currentTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (this.currentTheme === 'system') {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Listen for changes in system preference
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (this.currentTheme === 'system') {
+                    if (e.matches) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Update theme
+     */
+    updateTheme(theme) {
+        this.currentTheme = theme;
+        localStorage.setItem('theme', theme);
+        
+        // Apply theme changes
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+        } else if (theme === 'system') {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        this.showMessage(`Thema gewijzigd naar ${theme === 'system' ? 'systeemvoorkeur' : theme === 'dark' ? 'donker' : 'licht'}`, 'success');
+    }
+
+    /**
+     * Update install status
+     */
+    updateInstallStatus() {
+        const installButton = document.getElementById('install-app-settings');
+        const alreadyInstalled = document.getElementById('already-installed');
+        
+        if (installButton && alreadyInstalled) {
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                // App is already installed
+                alreadyInstalled.classList.remove('hidden');
+                installButton.classList.add('hidden');
+            } else {
+                // Make sure the install button in settings reflects the same state as the main install button
+                alreadyInstalled.classList.add('hidden');
+                installButton.classList.remove('hidden');
+                
+                if (deferredPrompt) {
+                    // Add click handler
+                    installButton.addEventListener('click', async () => {
+                        installButton.classList.add('hidden');
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        
+                        if (outcome === 'accepted') {
+                            // App was installed
+                            alreadyInstalled.classList.remove('hidden');
+                        }
+                        
+                        deferredPrompt = null;
+                    });
+                } else {
+                    // No install prompt available
+                    installButton.classList.add('hidden');
+                }
+            }
+        }
+    }
+
+    /**
+     * Display statistics modal
+     */
+    displayStatsModal(stats) {
+        const modal = document.getElementById('stats-modal');
+        const topArtistsList = document.getElementById('top-artists-list');
+        const recentActivityList = document.getElementById('recent-activity-list');
+        const totalPlaysElement = document.getElementById('total-plays');
+        
+        if (!modal || !topArtistsList || !recentActivityList || !totalPlaysElement) return;
+        
+        // Display top artists
+        let topArtistsHtml = '';
+        if (stats.topArtists.length > 0) {
+            stats.topArtists.forEach((artist, index) => {
+                topArtistsHtml += `
+                    <div class="stats-item flex items-center justify-between p-2">
+                        <div class="flex items-center">
+                            <span class="text-primary font-bold mr-2">${index + 1}.</span>
+                            <span>${artist.name}</span>
+                        </div>
+                        <span class="bg-primary bg-opacity-20 text-primary dark:text-primary-light px-2 py-1 rounded-full text-sm">
+                            ${artist.count} keer
+                        </span>
+                    </div>
+                `;
+            });
+        } else {
+            topArtistsHtml = '<p class="text-center text-gray-500 py-2">Nog geen luistergeschiedenis</p>';
+        }
+        topArtistsList.innerHTML = topArtistsHtml;
+        
+        // Display recent activity
+        let recentActivityHtml = '';
+        if (stats.recentActivity.length > 0) {
+            stats.recentActivity.forEach(activity => {
+                const date = new Date(activity.timestamp);
+                const formattedDate = date.toLocaleString('nl-NL', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                recentActivityHtml += `
+                    <div class="stats-item p-2">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-medium">${activity.trackName}</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${activity.artistName} • ${activity.albumName}</p>
+                            </div>
+                            <span class="text-xs text-gray-500">${formattedDate}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            recentActivityHtml = '<p class="text-center text-gray-500 py-2">Nog geen luistergeschiedenis</p>';
+        }
+        recentActivityList.innerHTML = recentActivityHtml;
+        
+        // Set total plays
+        totalPlaysElement.textContent = stats.totalPlays;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+    
+    /**
+     * Hide statistics modal
+     */
+    hideStatsModal() {
+        const modal = document.getElementById('stats-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Display pre-releases
+     */
+    displayPreReleases(preReleases) {
+        const container = document.getElementById('pre-releases');
+        container.innerHTML = '';
+        
+        console.log(`Displaying ${preReleases?.length || 0} pre-releases`);
+        
+        if (!preReleases || preReleases.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-calendar-day text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Geen aankomende releases gevonden</p>
+                    <p class="text-gray-500 text-sm mt-2">Dit kan worden veroorzaakt door API-beperkingen</p>
+                    <p class="text-gray-500 text-xs mt-4">
+                        De Spotify API beperkt het aantal verzoeken. 
+                        Probeer het later opnieuw als je veel artiesten volgt.
+                    </p>
+                    <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
+                        Opnieuw proberen
                     </button>
                 </div>
             `;
-            
-            trackGrid.appendChild(trackCard);
+            return;
         }
         
-        container.appendChild(trackGrid);
+        // Sort by release date (earliest first)
+        preReleases.sort((a, b) => {
+            if (!a.releaseDate) return 1;
+            if (!b.releaseDate) return -1;
+            return a.releaseDate - b.releaseDate;
+        });
         
-        // Initialize play buttons
-        app.setupTrackPreviewButtons();
+        // Add a note about API limitations
+        const noteElement = document.createElement('div');
+        noteElement.className = 'col-span-full mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg';
+        noteElement.innerHTML = `
+            <p class="text-sm flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                Door API-beperkingen worden alleen releases van de eerste 10 artiesten weergegeven.
+            </p>
+        `;
+        container.appendChild(noteElement);
+        
+        for (const release of preReleases) {
+            // Skip invalid releases
+            if (!release.album || !release.artist || !release.releaseDate) {
+                console.warn('Invalid release data:', release);
+                continue;
+            }
+            
+            // Calculate days until release
+            const daysUntilRelease = Math.ceil((release.releaseDate - new Date()) / (1000 * 60 * 60 * 24));
+            
+            // Format the date for display
+            const releaseDateFormatted = release.releaseDate.toLocaleDateString('nl-NL', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row mb-4';
+            
+            let artistJson = '';
+            try {
+                artistJson = JSON.stringify(release.artist.genres || []).replace(/'/g, "\\'");
+            } catch (e) {
+                artistJson = '[]';
+            }
+            
+            card.innerHTML = `
+                <div class="md:w-1/4 flex-shrink-0">
+                    <img src="${release.album.images[0]?.url || 'img/placeholder-album.png'}" 
+                        alt="${release.album.name}" class="w-full h-full object-cover">
+                </div>
+                <div class="p-4 md:w-3/4 flex flex-col">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg">${release.album.name}</h3>
+                            <p class="text-primary">${release.artist.name}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="bg-primary bg-opacity-20 text-primary px-2 py-1 rounded-full text-sm font-medium">
+                                ${daysUntilRelease === 0 ? 'Vandaag' : (daysUntilRelease === 1 ? 'Morgen' : `Nog ${daysUntilRelease} dagen`)}
+                            </span>
+                            <p class="text-sm text-gray-500 mt-1">${releaseDateFormatted}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-2 mb-3">
+                        <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                            ${release.album.album_type.charAt(0).toUpperCase() + release.album.album_type.slice(1)}
+                        </span>
+                        <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full ml-2">
+                            ${release.album.total_tracks} tracks
+                        </span>
+                    </div>
+                    
+                    <div class="mt-auto flex justify-between items-center">
+                        <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${release.artist.img?.replace(/'/g, "\\'")}', ${artistJson})" class="text-gray-600 hover:text-red-500 transition-colors">
+                            <i class="fas fa-heart mr-1 ${this.isArtistInFavorites(release.artist.id) ? 'text-red-500' : ''}"></i>
+                            <span>${this.isArtistInFavorites(release.artist.id) ? 'Gevolgd' : 'Volgen'}</span>
+                        </button>
+                        
+                        <div>
+                            ${release.album.external_urls?.spotify ? `
+                                <a href="${release.album.external_urls.spotify}" target="_blank" class="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-lg text-sm transition">
+                                    <i class="fab fa-spotify mr-1"></i>Pre-save
+                                </a>
+                            ` : ''}
+                            
+                            <button onclick="app.shareRelease('${release.artist.name.replace(/'/g, "\\'")}', '${release.album.name.replace(/'/g, "\\'")}', '${release.album.external_urls?.spotify || ''}')" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition">
+                                <i class="fas fa-share-alt mr-1"></i>Delen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        }
+        
+        // Add debug info in development mode
+        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+            const debugElement = document.createElement('div');
+            debugElement.className = 'mt-4 p-2 bg-gray-100 rounded text-xs';
+            debugElement.innerHTML = `<p class="text-gray-500">Debug info: Loaded ${preReleases.length} upcoming releases</p>`;
+            container.appendChild(debugElement);
+        }
     }
 }
 
