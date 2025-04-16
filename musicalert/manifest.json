@@ -1,19 +1,49 @@
 {
-  "name": "MusicAlert",
+  "name": "MusicAlert - Volg je favoriete DJ's",
   "short_name": "MusicAlert",
+  "description": "Ontvang meldingen wanneer je favoriete DJ's nieuwe muziek uitbrengen",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#6C4AE6",
   "theme_color": "#6C4AE6",
-  "description": "Volg je favoriete DJ's en ontdek nieuwe muziek zodra deze uitkomt",
   "icons": [
     {
-      "src": "img/icons/icon-192x192.png",
+      "src": "img/logo-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "img/icons/icon-512x512.png",
+      "src": "img/logo-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

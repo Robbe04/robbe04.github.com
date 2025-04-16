@@ -1669,15 +1669,6 @@ class UIService {
             container.appendChild(debugElement);
         }
     }
-
-    /**
-     * Check if an artist is in favorites
-     * @param {string} artistId - The artist ID to check
-     * @returns {boolean} - True if artist is in favorites
-     */
-    isArtistInFavorites(artistId) {
-        return app.favorites && app.favorites.some(artist => artist.id === artistId);
-    }
 }
 
 // Initialize UI service
