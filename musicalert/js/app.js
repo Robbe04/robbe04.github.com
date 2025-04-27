@@ -78,15 +78,28 @@ class MusicAlertApp {
             ui.updateNotificationToggle(this.notificationsEnabled);
         }
         
-        // Display favorites and check for new releases
+        // Display favorites first (this is quick)
         this.displayFavorites();
-        this.checkNewReleases();
         
-        // Load recommendations based on favorites
+        // Load pre-releases first if we have favorites
         if (this.favorites.length) {
-            this.loadRecommendations();
-            this.loadTrackRecommendations();
-            this.loadPreReleases();
+            try {
+                // Switch to pre-releases tab to show loading immediately
+                this.switchTab('pre-releases');
+                
+                // Load pre-releases first with priority
+                await this.loadPreReleases();
+                
+                // Then check for new releases and load recommendations in parallel
+                await Promise.all([
+                    this.checkNewReleases(),
+                    this.loadRecommendations(),
+                    this.loadTrackRecommendations()
+                ]);
+            } catch (error) {
+                console.error('Error in initialization sequence:', error);
+                ui.showMessage('Er is een fout opgetreden bij het initialiseren van de app', 'error');
+            }
         }
         
         // Setup offline detection
@@ -494,10 +507,10 @@ class MusicAlertApp {
                 console.log('Forcing refresh of pre-releases cache');
             }
             
-            // Handle errors when token is expired or API is down
+            // Prioritize pre-releases by setting a specific flag for the API call
             let preReleases = [];
             try {
-                preReleases = await api.getPreReleases(this.favorites);
+                preReleases = await api.getPreReleases(this.favorites, 10, true); // Add priority flag
             } catch (apiError) {
                 console.error('API error getting pre-releases:', apiError);
                 ui.showMessage('Er is een probleem met de verbinding naar Spotify. Probeer het later opnieuw.', 'error');
@@ -520,6 +533,8 @@ class MusicAlertApp {
             } else if (preReleases.length > 0) {
                 ui.showMessage(`${preReleases.length} aankomende releases gevonden`, 'success');
             }
+            
+            return preReleases;
         } catch (error) {
             ui.hideLoading();
             console.error('Error loading pre-releases:', error);
@@ -543,6 +558,8 @@ class MusicAlertApp {
             }
             
             ui.showMessage('Probleem bij laden van aankomende releases. Spotify API mogelijk niet beschikbaar.', 'error');
+            
+            return [];
         }
     }
 
