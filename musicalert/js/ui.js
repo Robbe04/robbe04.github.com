@@ -1536,6 +1536,13 @@ class UIService {
     }
 
     /**
+     * Check if an artist is in favorites
+     */
+    isArtistInFavorites(artistId) {
+        return app.favorites.some(fav => fav.id === artistId);
+    }
+
+    /**
      * Display pre-releases
      */
     displayPreReleases(preReleases) {
@@ -1564,13 +1571,6 @@ class UIService {
             return;
         }
         
-        // Sort by release date (earliest first)
-        preReleases.sort((a, b) => {
-            if (!a.releaseDate) return 1;
-            if (!b.releaseDate) return -1;
-            return a.releaseDate - b.releaseDate;
-        });
-        
         // Add a note about API limitations
         const noteElement = document.createElement('div');
         noteElement.className = 'col-span-full mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg';
@@ -1582,90 +1582,115 @@ class UIService {
         `;
         container.appendChild(noteElement);
         
-        for (const release of preReleases) {
-            // Skip invalid releases
-            if (!release.album || !release.artist || !release.releaseDate) {
-                console.warn('Invalid release data:', release);
-                continue;
-            }
-            
-            // Calculate days until release
-            const daysUntilRelease = Math.ceil((release.releaseDate - new Date()) / (1000 * 60 * 60 * 24));
-            
-            // Format the date for display
-            const releaseDateFormatted = release.releaseDate.toLocaleDateString('nl-NL', { 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-            });
-            
-            const card = document.createElement('div');
-            card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row mb-4';
-            
-            let artistJson = '';
+        // Sort by release date (earliest first, removing any that have invalid dates)
+        const validReleases = preReleases.filter(release => 
+            release && release.releaseDate && !isNaN(new Date(release.releaseDate).getTime())
+        );
+        
+        validReleases.sort((a, b) => {
+            const dateA = new Date(a.releaseDate);
+            const dateB = new Date(b.releaseDate);
+            return dateA - dateB;
+        });
+        
+        for (const release of validReleases) {
             try {
-                artistJson = JSON.stringify(release.artist.genres || []).replace(/'/g, "\\'");
-            } catch (e) {
-                artistJson = '[]';
-            }
-            
-            card.innerHTML = `
-                <div class="md:w-1/4 flex-shrink-0">
-                    <img src="${release.album.images[0]?.url || 'img/placeholder-album.png'}" 
-                        alt="${release.album.name}" class="w-full h-full object-cover">
-                </div>
-                <div class="p-4 md:w-3/4 flex flex-col">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-bold text-lg">${release.album.name}</h3>
-                            <p class="text-primary">${release.artist.name}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="bg-primary bg-opacity-20 text-primary px-2 py-1 rounded-full text-sm font-medium">
-                                ${daysUntilRelease === 0 ? 'Vandaag' : (daysUntilRelease === 1 ? 'Morgen' : `Nog ${daysUntilRelease} dagen`)}
-                            </span>
-                            <p class="text-sm text-gray-500 mt-1">${releaseDateFormatted}</p>
-                        </div>
+                // Skip invalid releases
+                if (!release.album || !release.artist || !release.releaseDate) {
+                    console.warn('Invalid release data:', release);
+                    continue;
+                }
+                
+                // Calculate days until release
+                const daysUntilRelease = Math.ceil((new Date(release.releaseDate) - new Date()) / (1000 * 60 * 60 * 24));
+                
+                // Format the date for display
+                const releaseDate = new Date(release.releaseDate);
+                const releaseDateFormatted = releaseDate.toLocaleDateString('nl-NL', { 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row mb-4';
+                
+                let artistJson = '[]';
+                try {
+                    if (release.artist.genres && Array.isArray(release.artist.genres)) {
+                        artistJson = JSON.stringify(release.artist.genres).replace(/'/g, "\\'");
+                    }
+                } catch (e) {
+                    console.warn('Could not stringify artist genres', e);
+                }
+                
+                const artistImage = release.artist.img || 
+                                    (release.artist.images && release.artist.images.length > 0 ? 
+                                     release.artist.images[0].url : 'img/placeholder-artist.png');
+                
+                const albumImage = release.album.images && release.album.images.length > 0 ? 
+                                    release.album.images[0].url : 'img/placeholder-album.png';
+                
+                card.innerHTML = `
+                    <div class="md:w-1/4 flex-shrink-0">
+                        <img src="${albumImage}" 
+                            alt="${release.album.name}" class="w-full h-full object-cover">
                     </div>
-                    
-                    <div class="mt-2 mb-3">
-                        <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                            ${release.album.album_type.charAt(0).toUpperCase() + release.album.album_type.slice(1)}
-                        </span>
-                        <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full ml-2">
-                            ${release.album.total_tracks} tracks
-                        </span>
-                    </div>
-                    
-                    <div class="mt-auto flex justify-between items-center">
-                        <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${release.artist.img?.replace(/'/g, "\\'")}', ${artistJson})" class="text-gray-600 hover:text-red-500 transition-colors">
-                            <i class="fas fa-heart mr-1 ${this.isArtistInFavorites(release.artist.id) ? 'text-red-500' : ''}"></i>
-                            <span>${this.isArtistInFavorites(release.artist.id) ? 'Gevolgd' : 'Volgen'}</span>
-                        </button>
+                    <div class="p-4 md:w-3/4 flex flex-col">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-lg">${release.album.name}</h3>
+                                <p class="text-primary">${release.artist.name}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="bg-primary bg-opacity-20 text-primary px-2 py-1 rounded-full text-sm font-medium">
+                                    ${daysUntilRelease === 0 ? 'Vandaag' : (daysUntilRelease === 1 ? 'Morgen' : `Nog ${daysUntilRelease} dagen`)}
+                                </span>
+                                <p class="text-sm text-gray-500 mt-1">${releaseDateFormatted}</p>
+                            </div>
+                        </div>
                         
-                        <div>
-                            ${release.album.external_urls?.spotify ? `
-                                <a href="${release.album.external_urls.spotify}" target="_blank" class="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-lg text-sm transition">
-                                    <i class="fab fa-spotify mr-1"></i>Pre-save
-                                </a>
-                            ` : ''}
-                            
-                            <button onclick="app.shareRelease('${release.artist.name.replace(/'/g, "\\'")}', '${release.album.name.replace(/'/g, "\\'")}', '${release.album.external_urls?.spotify || ''}')" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition">
-                                <i class="fas fa-share-alt mr-1"></i>Delen
+                        <div class="mt-2 mb-3">
+                            <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                ${release.album.album_type ? (release.album.album_type.charAt(0).toUpperCase() + release.album.album_type.slice(1)) : 'Album'}
+                            </span>
+                            <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full ml-2">
+                                ${release.album.total_tracks || '?'} tracks
+                            </span>
+                        </div>
+                        
+                        <div class="mt-auto flex justify-between items-center">
+                            <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${artistImage?.replace(/'/g, "\\'")}', ${artistJson})" class="text-gray-600 hover:text-red-500 transition-colors">
+                                <i class="fas fa-heart mr-1 ${this.isArtistInFavorites(release.artist.id) ? 'text-red-500' : ''}"></i>
+                                <span>${this.isArtistInFavorites(release.artist.id) ? 'Gevolgd' : 'Volgen'}</span>
                             </button>
+                            
+                            <div>
+                                ${release.album.external_urls?.spotify ? `
+                                    <a href="${release.album.external_urls.spotify}" target="_blank" class="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-lg text-sm transition">
+                                        <i class="fab fa-spotify mr-1"></i>Pre-save
+                                    </a>
+                                ` : ''}
+                                
+                                <button onclick="app.shareRelease('${release.artist.name.replace(/'/g, "\\'")}', '${release.album.name.replace(/'/g, "\\'")}', '${release.album.external_urls?.spotify || ''}')" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition">
+                                    <i class="fas fa-share-alt mr-1"></i>Delen
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            container.appendChild(card);
+                `;
+                
+                container.appendChild(card);
+            } catch (error) {
+                console.error('Error rendering pre-release:', error, release);
+            }
         }
         
         // Add debug info in development mode
         if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
             const debugElement = document.createElement('div');
             debugElement.className = 'mt-4 p-2 bg-gray-100 rounded text-xs';
-            debugElement.innerHTML = `<p class="text-gray-500">Debug info: Loaded ${preReleases.length} upcoming releases</p>`;
+            debugElement.innerHTML = `<p class="text-gray-500">Debug info: Loaded ${validReleases.length} upcoming releases</p>`;
             container.appendChild(debugElement);
         }
     }
