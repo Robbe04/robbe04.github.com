@@ -352,6 +352,14 @@ class MusicAlertApp {
                 ui.hideLoading();
             }
             
+            // Notify service worker that check is complete
+            if (background && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'CHECK_COMPLETE',
+                    releases: newReleases.length
+                });
+            }
+            
             return newReleases;
         } catch (error) {
             if (!background) {

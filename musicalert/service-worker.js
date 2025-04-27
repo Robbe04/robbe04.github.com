@@ -164,5 +164,17 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'CHECK_COMPLETE') {
     console.log('Background sync: Client completed checking for new releases');
   }
-}
-);
+  
+  // Add support for manual release checks
+  if (event.data && event.data.type === 'MANUAL_CHECK') {
+    checkForNewReleases()
+      .then(() => {
+        // Notify client that manual check was initiated
+        if (event.source) {
+          event.source.postMessage({
+            type: 'MANUAL_CHECK_INITIATED'
+          });
+        }
+      });
+  }
+});

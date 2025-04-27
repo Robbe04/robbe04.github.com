@@ -15,6 +15,8 @@ MusicAlert is een geavanceerde web applicatie waarmee gebruikers hun favoriete D
 - **Interactieve Audio Visualizer**: Visuele weergave van afgespeelde muziek
 - **Aanbevelingen**: Krijg aanbevelingen voor nieuwe artiesten gebaseerd op je voorkeuren
 - **Genre Filtering**: Filter artiesten op specifieke genres
+- **Push Notificaties**: Ontvang automatisch meldingen over nieuwe releases, zelfs wanneer de app niet geopend is
+- **Achtergrond Synchronisatie**: De app controleert regelmatig op nieuwe releases in de achtergrond
 
 ## Installatie en Setup
 
