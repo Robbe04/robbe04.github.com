@@ -497,12 +497,16 @@ class MusicAlertApp {
             const preReleases = await api.getPreReleases(this.favorites);
             console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
             
-            if (preReleases?.length === 0) {
-                ui.showMessage('Geen aankomende releases gevonden of API-limiet bereikt. Probeer het later opnieuw.', 'info');
-            }
-            
+            // Display the results
             ui.displayPreReleases(preReleases);
             ui.hideLoading();
+            
+            // Show message if no results
+            if (!preReleases || preReleases.length === 0) {
+                ui.showMessage('Geen aankomende releases gevonden voor je gevolgde artiesten', 'info');
+            } else {
+                ui.showMessage(`${preReleases.length} aankomende releases gevonden`, 'success');
+            }
         } catch (error) {
             ui.hideLoading();
             console.error('Error loading pre-releases:', error);
@@ -511,7 +515,7 @@ class MusicAlertApp {
             const container = document.getElementById('pre-releases');
             if (container) {
                 container.innerHTML = `
-                    <div class="col-span-full text-center py-8">
+                    <div class="text-center py-8">
                         <div class="text-gray-400 mb-4">
                             <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
@@ -525,7 +529,7 @@ class MusicAlertApp {
                 `;
             }
             
-            ui.showMessage('API-limiet bereikt of netwerkfout. Probeer het later opnieuw.', 'error');
+            ui.showMessage('Fout bij laden van aankomende releases. Probeer het later opnieuw.', 'error');
         }
     }
 

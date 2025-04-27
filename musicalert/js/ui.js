@@ -1547,22 +1547,20 @@ class UIService {
      */
     displayPreReleases(preReleases) {
         const container = document.getElementById('pre-releases');
+        if (!container) return;
+        
         container.innerHTML = '';
         
         console.log(`Displaying ${preReleases?.length || 0} pre-releases`);
         
         if (!preReleases || preReleases.length === 0) {
             container.innerHTML = `
-                <div class="col-span-full text-center py-8">
+                <div class="text-center py-8">
                     <div class="text-gray-400 mb-4">
                         <i class="fas fa-calendar-day text-5xl"></i>
                     </div>
                     <p class="text-gray-500">Geen aankomende releases gevonden</p>
-                    <p class="text-gray-500 text-sm mt-2">Dit kan worden veroorzaakt door API-beperkingen</p>
-                    <p class="text-gray-500 text-xs mt-4">
-                        De Spotify API beperkt het aantal verzoeken. 
-                        Probeer het later opnieuw als je veel artiesten volgt.
-                    </p>
+                    <p class="text-gray-500 text-sm mt-2">Dit kan worden veroorzaakt door API-beperkingen of omdat er geen releases gepland zijn</p>
                     <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
                         Opnieuw proberen
                     </button>
@@ -1573,18 +1571,18 @@ class UIService {
         
         // Add a note about API limitations
         const noteElement = document.createElement('div');
-        noteElement.className = 'col-span-full mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg';
+        noteElement.className = 'mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg';
         noteElement.innerHTML = `
             <p class="text-sm flex items-center">
                 <i class="fas fa-info-circle mr-2"></i>
-                Door API-beperkingen worden alleen releases van de eerste 10 artiesten weergegeven.
+                Door API-beperkingen worden alleen releases van de eerste ${preReleases.length > 10 ? '10' : preReleases.length} artiesten weergegeven.
             </p>
         `;
         container.appendChild(noteElement);
         
-        // Sort by release date (earliest first, removing any that have invalid dates)
+        // Filter valid releases and sort by release date (earliest first)
         const validReleases = preReleases.filter(release => 
-            release && release.releaseDate && !isNaN(new Date(release.releaseDate).getTime())
+            release && release.artist && release.album && release.releaseDate && !isNaN(new Date(release.releaseDate).getTime())
         );
         
         validReleases.sort((a, b) => {
@@ -1593,19 +1591,17 @@ class UIService {
             return dateA - dateB;
         });
         
-        for (const release of validReleases) {
+        // Render each valid release
+        validReleases.forEach(release => {
             try {
-                // Skip invalid releases
-                if (!release.album || !release.artist || !release.releaseDate) {
-                    console.warn('Invalid release data:', release);
-                    continue;
-                }
-                
                 // Calculate days until release
-                const daysUntilRelease = Math.ceil((new Date(release.releaseDate) - new Date()) / (1000 * 60 * 60 * 24));
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                const releaseDate = new Date(release.releaseDate);
+                releaseDate.setHours(0, 0, 0, 0);
+                const daysUntilRelease = Math.round((releaseDate - now) / (1000 * 60 * 60 * 24));
                 
                 // Format the date for display
-                const releaseDate = new Date(release.releaseDate);
                 const releaseDateFormatted = releaseDate.toLocaleDateString('nl-NL', { 
                     day: 'numeric', 
                     month: 'long', 
@@ -1615,21 +1611,25 @@ class UIService {
                 const card = document.createElement('div');
                 card.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg flex flex-col md:flex-row mb-4';
                 
-                let artistJson = '[]';
-                try {
-                    if (release.artist.genres && Array.isArray(release.artist.genres)) {
-                        artistJson = JSON.stringify(release.artist.genres).replace(/'/g, "\\'");
-                    }
-                } catch (e) {
-                    console.warn('Could not stringify artist genres', e);
-                }
-                
+                // Get images safely
                 const artistImage = release.artist.img || 
                                     (release.artist.images && release.artist.images.length > 0 ? 
                                      release.artist.images[0].url : 'img/placeholder-artist.png');
                 
                 const albumImage = release.album.images && release.album.images.length > 0 ? 
                                     release.album.images[0].url : 'img/placeholder-album.png';
+                
+                // Create a safe JSON representation of artist genres
+                let artistGenresJson = '[]';
+                try {
+                    if (release.artist.genres && Array.isArray(release.artist.genres)) {
+                        artistGenresJson = JSON.stringify(release.artist.genres)
+                            .replace(/"/g, '\\"')
+                            .replace(/'/g, "\\'");
+                    }
+                } catch (e) {
+                    console.warn('Could not stringify artist genres', e);
+                }
                 
                 card.innerHTML = `
                     <div class="md:w-1/4 flex-shrink-0">
@@ -1644,7 +1644,9 @@ class UIService {
                             </div>
                             <div class="text-right">
                                 <span class="bg-primary bg-opacity-20 text-primary px-2 py-1 rounded-full text-sm font-medium">
-                                    ${daysUntilRelease === 0 ? 'Vandaag' : (daysUntilRelease === 1 ? 'Morgen' : `Nog ${daysUntilRelease} dagen`)}
+                                    ${daysUntilRelease === 0 ? 'Vandaag' : 
+                                      daysUntilRelease === 1 ? 'Morgen' : 
+                                      `Nog ${daysUntilRelease} dagen`}
                                 </span>
                                 <p class="text-sm text-gray-500 mt-1">${releaseDateFormatted}</p>
                             </div>
@@ -1652,7 +1654,9 @@ class UIService {
                         
                         <div class="mt-2 mb-3">
                             <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                                ${release.album.album_type ? (release.album.album_type.charAt(0).toUpperCase() + release.album.album_type.slice(1)) : 'Album'}
+                                ${release.album.album_type ? 
+                                  (release.album.album_type.charAt(0).toUpperCase() + release.album.album_type.slice(1)) : 
+                                  'Album'}
                             </span>
                             <span class="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full ml-2">
                                 ${release.album.total_tracks || '?'} tracks
@@ -1660,7 +1664,9 @@ class UIService {
                         </div>
                         
                         <div class="mt-auto flex justify-between items-center">
-                            <button onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${artistImage?.replace(/'/g, "\\'")}', ${artistJson})" class="text-gray-600 hover:text-red-500 transition-colors">
+                            <button 
+                                onclick="app.toggleFavorite('${release.artist.id}', '${release.artist.name.replace(/'/g, "\\'")}', '${artistImage?.replace(/'/g, "\\'")}', ${artistGenresJson})" 
+                                class="text-gray-600 hover:text-red-500 transition-colors">
                                 <i class="fas fa-heart mr-1 ${this.isArtistInFavorites(release.artist.id) ? 'text-red-500' : ''}"></i>
                                 <span>${this.isArtistInFavorites(release.artist.id) ? 'Gevolgd' : 'Volgen'}</span>
                             </button>
@@ -1672,7 +1678,9 @@ class UIService {
                                     </a>
                                 ` : ''}
                                 
-                                <button onclick="app.shareRelease('${release.artist.name.replace(/'/g, "\\'")}', '${release.album.name.replace(/'/g, "\\'")}', '${release.album.external_urls?.spotify || ''}')" class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition">
+                                <button 
+                                    onclick="app.shareRelease('${release.artist.name.replace(/'/g, "\\'")}', '${release.album.name.replace(/'/g, "\\'")}', '${release.album.external_urls?.spotify || ''}')" 
+                                    class="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm transition">
                                     <i class="fas fa-share-alt mr-1"></i>Delen
                                 </button>
                             </div>
@@ -1684,15 +1692,7 @@ class UIService {
             } catch (error) {
                 console.error('Error rendering pre-release:', error, release);
             }
-        }
-        
-        // Add debug info in development mode
-        if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-            const debugElement = document.createElement('div');
-            debugElement.className = 'mt-4 p-2 bg-gray-100 rounded text-xs';
-            debugElement.innerHTML = `<p class="text-gray-500">Debug info: Loaded ${validReleases.length} upcoming releases</p>`;
-            container.appendChild(debugElement);
-        }
+        });
     }
 }
 
