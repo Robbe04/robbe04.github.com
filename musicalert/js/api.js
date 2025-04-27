@@ -404,11 +404,13 @@ class SpotifyApiService {
             }
             
             // To avoid rate limiting, only process a subset of artists
-            const maxArtistsToProcess = 10; // Process only 10 artists at a time
+            const maxArtistsToProcess = Math.min(10, favorites.length); // Process only 10 artists at a time
             const artistsToProcess = favorites.slice(0, maxArtistsToProcess);
             
             // Show a message that we're limiting the request due to API constraints
-            ui.showMessage(`API-limiet bereikt: Alleen de eerste ${maxArtistsToProcess} artiesten worden gecontroleerd op aankomende releases`, 'info');
+            if (favorites.length > maxArtistsToProcess) {
+                ui.showMessage(`API-limiet: Alleen de eerste ${maxArtistsToProcess} artiesten worden gecontroleerd op aankomende releases`, 'info');
+            }
             
             // Process artists with delay between requests
             for (let i = 0; i < artistsToProcess.length; i++) {
@@ -419,7 +421,7 @@ class SpotifyApiService {
                     
                     // Add delay between requests to avoid rate limiting
                     if (i > 0) {
-                        await new Promise(resolve => setTimeout(resolve, 300)); // 300ms delay
+                        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
                     }
                     
                     // Get albums for this artist
@@ -432,10 +434,20 @@ class SpotifyApiService {
                     if (!response.ok) {
                         if (response.status === 429) {
                             // Get retry-after header
-                            const retryAfter = response.headers.get('Retry-After') || '5';
+                            const retryAfter = parseInt(response.headers.get('Retry-After') || '5');
                             console.log(`Rate limited for artist ${artist.id}. Retry after ${retryAfter}s`);
                             
-                            // Skip this artist for now
+                            // Wait and try again if this is important
+                            await new Promise(resolve => setTimeout(resolve, retryAfter * 1000 + 500));
+                            const retryResponse = await fetch(`https://api.spotify.com/v1/artists/${artist.id}/albums?include_groups=album,single&market=NL&limit=5`, { headers });
+                            
+                            if (!retryResponse.ok) {
+                                console.error(`Retry failed for artist ${artist.id}`);
+                                continue;
+                            }
+                            
+                            const retryData = await retryResponse.json();
+                            processAlbumData(retryData, artist);
                             continue;
                         }
                         
@@ -444,51 +456,56 @@ class SpotifyApiService {
                     }
                     
                     const data = await response.json();
+                    processAlbumData(data, artist);
                     
-                    // Process albums
-                    for (const album of data.items) {
-                        // Skip albums we've already processed
-                        if (processedAlbumIds.has(album.id)) {
-                            continue;
-                        }
-                        
-                        // Add to processed IDs
-                        processedAlbumIds.add(album.id);
-                        
-                        // Parse release date
-                        let releaseDate;
-                        try {
-                            // Handle YYYY-MM-DD and YYYY formats
-                            if (album.release_date_precision === 'day') {
-                                releaseDate = new Date(album.release_date);
-                            } else if (album.release_date_precision === 'month') {
-                                releaseDate = new Date(`${album.release_date}-01`);
-                            } else {
-                                releaseDate = new Date(album.release_date);
-                            }
-                        } catch (e) {
-                            console.error(`Error parsing date: ${album.release_date}`, e);
-                            continue;
-                        }
-                        
-                        // Check if this is a future release (tomorrow or later to avoid timezone issues)
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        tomorrow.setHours(0, 0, 0, 0);
-                        
-                        if (releaseDate >= tomorrow) {
-                            console.log(`Found upcoming release: ${album.name} by ${artist.name}, date: ${releaseDate.toISOString()}`);
-                            
-                            preReleases.push({
-                                artist: artist,
-                                album: album,
-                                releaseDate: releaseDate,
-                                isPreRelease: true
-                            });
-                        }
-                    }
                 } catch (error) {
                     console.error(`Error fetching releases for ${artist.name}:`, error);
+                }
+            }
+            
+            // Process album data (helper function to avoid code duplication)
+            function processAlbumData(data, artist) {
+                // Process albums
+                for (const album of data.items) {
+                    // Skip albums we've already processed
+                    if (processedAlbumIds.has(album.id)) {
+                        continue;
+                    }
+                    
+                    // Add to processed IDs
+                    processedAlbumIds.add(album.id);
+                    
+                    // Parse release date
+                    let releaseDate;
+                    try {
+                        // Handle YYYY-MM-DD and YYYY formats
+                        if (album.release_date_precision === 'day') {
+                            releaseDate = new Date(album.release_date);
+                        } else if (album.release_date_precision === 'month') {
+                            releaseDate = new Date(`${album.release_date}-01`);
+                        } else {
+                            releaseDate = new Date(album.release_date);
+                        }
+                    } catch (e) {
+                        console.error(`Error parsing date: ${album.release_date}`, e);
+                        continue;
+                    }
+                    
+                    // Check if this is a future release (tomorrow or later to avoid timezone issues)
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    tomorrow.setHours(0, 0, 0, 0);
+                    
+                    if (releaseDate >= tomorrow) {
+                        console.log(`Found upcoming release: ${album.name} by ${artist.name}, date: ${releaseDate.toISOString()}`);
+                        
+                        preReleases.push({
+                            artist: artist,
+                            album: album,
+                            releaseDate: releaseDate,
+                            isPreRelease: true
+                        });
+                    }
                 }
             }
             
@@ -508,7 +525,7 @@ class SpotifyApiService {
                     try {
                         // Add delay between requests
                         if (i > 0) {
-                            await new Promise(resolve => setTimeout(resolve, 300));
+                            await new Promise(resolve => setTimeout(resolve, 500));
                         }
                         
                         // Get full album details
@@ -520,7 +537,7 @@ class SpotifyApiService {
                         
                         if (!albumResponse.ok) {
                             if (albumResponse.status === 429) {
-                                console.log(`Rate limited for album ${release.album.id}. Skipping detailed info.`);
+                                console.log(`Rate limited for album ${release.album.id}. Using basic info instead.`);
                                 detailedReleases.push(release); // Use basic info
                                 continue;
                             }
@@ -586,7 +603,7 @@ class SpotifyApiService {
                     console.log(`Rate limited. Waiting ${retryAfter}s before retry ${retries + 1}/${maxRetries}`);
                     
                     // Wait for the specified amount of time
-                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000 + 500));
                     retries++;
                 } else {
                     // For other errors, just return the response
