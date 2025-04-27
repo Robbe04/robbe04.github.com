@@ -371,6 +371,60 @@ class UIService {
     }
 
     /**
+     * Display track recommendations
+     * This function is missing from the UI service, causing errors
+     */
+    displayTrackRecommendations(tracks) {
+        const container = document.getElementById('track-recommendations');
+        if (!container) return;
+        
+        if (!tracks || tracks.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-music text-5xl"></i>
+                    </div>
+                    <p class="text-gray-500">Geen aanbevolen tracks gevonden</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // A simple implementation that just lists the tracks
+        let html = '<div class="space-y-3">';
+        
+        tracks.forEach((track, index) => {
+            const artistNames = track.artists.map(a => a.name).join(', ');
+            
+            html += `
+                <div class="track-item bg-white rounded-lg shadow p-3 flex items-center">
+                    <div class="w-12 h-12 mr-3 flex-shrink-0">
+                        <img src="${track.album.images[0]?.url || ''}" 
+                            alt="${track.name}" 
+                            class="w-full h-full object-cover rounded">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-medium truncate">${track.name}</p>
+                        <p class="text-sm text-gray-600 truncate">${artistNames}</p>
+                    </div>
+                    <div class="flex-shrink-0 ml-2">
+                        ${track.preview_url ? 
+                            `<button class="p-2 bg-primary text-white rounded-full hover:bg-primary-dark transition"
+                                onclick="app.playPreview('${track.preview_url}', ${JSON.stringify(track).replace(/"/g, '&quot;')})">
+                                <i class="fas fa-play"></i>
+                            </button>` : 
+                            `<span class="text-xs bg-gray-200 px-2 py-1 rounded">Geen preview</span>`
+                        }
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    /**
      * Display favorites with sorting and filtering options
      */
     displayFavorites(favorites) {
@@ -863,9 +917,14 @@ class UIService {
 
     /**
      * Load and display genre filters
+     * Fix for the error when genreFilters element doesn't exist
      */
     async loadGenreFilters() {
         const container = document.getElementById('genreFilters');
+        if (!container) {
+            console.warn('Genre filters container not found');
+            return;  // Exit early if container doesn't exist
+        }
         
         try {
             const genres = await api.getGenres();
@@ -893,8 +952,10 @@ class UIService {
                 container.appendChild(button);
             });
         } catch (error) {
-            container.innerHTML = '<span class="text-red-500">Fout bij het laden van genres</span>';
             console.error('Error loading genres:', error);
+            if (container) {  // Double-check container existence
+                container.innerHTML = '<span class="text-red-500">Fout bij het laden van genres</span>';
+            }
         }
     }
 
@@ -1547,7 +1608,10 @@ class UIService {
      */
     displayPreReleases(preReleases) {
         const container = document.getElementById('pre-releases');
-        if (!container) return;
+        if (!container) {
+            console.error("Pre-releases container not found");
+            return;
+        }
         
         container.innerHTML = '';
         

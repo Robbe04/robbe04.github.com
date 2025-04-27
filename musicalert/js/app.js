@@ -494,17 +494,30 @@ class MusicAlertApp {
                 console.log('Forcing refresh of pre-releases cache');
             }
             
-            const preReleases = await api.getPreReleases(this.favorites);
+            // Handle errors when token is expired or API is down
+            let preReleases = [];
+            try {
+                preReleases = await api.getPreReleases(this.favorites);
+            } catch (apiError) {
+                console.error('API error getting pre-releases:', apiError);
+                ui.showMessage('Er is een probleem met de verbinding naar Spotify. Probeer het later opnieuw.', 'error');
+            }
+            
             console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
             
-            // Display the results
-            ui.displayPreReleases(preReleases);
+            // Display the results even if empty
+            if (ui && typeof ui.displayPreReleases === 'function') {
+                ui.displayPreReleases(preReleases || []);
+            } else {
+                console.error('UI service not available or displayPreReleases not defined');
+            }
+            
             ui.hideLoading();
             
-            // Show message if no results
+            // Show appropriate message based on results
             if (!preReleases || preReleases.length === 0) {
-                ui.showMessage('Geen aankomende releases gevonden voor je gevolgde artiesten', 'info');
-            } else {
+                ui.showMessage('Geen aankomende releases gevonden. API-limiet mogelijk bereikt. Probeer het later opnieuw.', 'info');
+            } else if (preReleases.length > 0) {
                 ui.showMessage(`${preReleases.length} aankomende releases gevonden`, 'success');
             }
         } catch (error) {
@@ -520,7 +533,7 @@ class MusicAlertApp {
                             <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
                         <p class="text-gray-700">Er is een fout opgetreden bij het laden van aankomende releases</p>
-                        <p class="text-gray-500 text-sm mt-2">Waarschijnlijk heb je de API-limiet bereikt. Probeer het later opnieuw.</p>
+                        <p class="text-gray-500 text-sm mt-2">De Spotify API heeft niet correct geantwoord of is niet beschikbaar.</p>
                         <p class="text-gray-500 text-xs mt-2">Foutdetails: ${error.message || 'Onbekende fout'}</p>
                         <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
                             Opnieuw proberen
@@ -529,7 +542,7 @@ class MusicAlertApp {
                 `;
             }
             
-            ui.showMessage('Fout bij laden van aankomende releases. Probeer het later opnieuw.', 'error');
+            ui.showMessage('Probleem bij laden van aankomende releases. Spotify API mogelijk niet beschikbaar.', 'error');
         }
     }
 
@@ -538,14 +551,30 @@ class MusicAlertApp {
      */
     async loadTrackRecommendations() {
         if (!this.favorites.length) {
-            ui.displayTrackRecommendations([]);
+            // Check if the UI function exists, otherwise do nothing
+            if (typeof ui.displayTrackRecommendations === 'function') {
+                ui.displayTrackRecommendations([]);
+            } else {
+                console.warn('ui.displayTrackRecommendations is not defined');
+            }
             return;
         }
         
         try {
             const artistIds = this.favorites.map(fav => fav.id);
             const recommendedTracks = await api.getTrackRecommendations(artistIds, 12);
-            ui.displayTrackRecommendations(recommendedTracks);
+            
+            // Check if the UI function exists before calling it
+            if (typeof ui.displayTrackRecommendations === 'function') {
+                ui.displayTrackRecommendations(recommendedTracks);
+            } else {
+                console.warn('ui.displayTrackRecommendations is not defined');
+                // Use an alternative if available
+                if (typeof ui.displayRecommendations === 'function') {
+                    console.log('Using ui.displayRecommendations as fallback');
+                    ui.displayRecommendations(recommendedTracks);
+                }
+            }
         } catch (error) {
             console.error('Error loading track recommendations:', error);
         }
