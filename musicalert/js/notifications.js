@@ -156,28 +156,6 @@ class NotificationsService {
     }
 
     /**
-     * Manually trigger a check for new releases in the service worker
-     */
-    async manualCheckForNewReleases() {
-        if (!this.swRegistration) {
-            console.warn('Service worker not registered');
-            return false;
-        }
-
-        try {
-            // Send manual check message to service worker
-            this.swRegistration.active.postMessage({
-                type: 'MANUAL_CHECK'
-            });
-            
-            return true;
-        } catch (error) {
-            console.error('Error triggering manual check:', error);
-            return false;
-        }
-    }
-
-    /**
      * Helper function to convert base64 to Uint8Array
      * (required for applicationServerKey)
      */

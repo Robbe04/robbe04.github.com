@@ -72,30 +72,39 @@ class MusicAlertApp {
         // Initialize sorting and filtering
         ui.initializeSortingAndFiltering();
         
-        // Initialize notifications
-        if (await notifications.init()) {
-            this.notificationsEnabled = await notifications.updateSubscriptionStatus();
-            ui.updateNotificationToggle(this.notificationsEnabled);
-        }
+        // Initialize notifications (niet direct API-aanroepen doen)
+        const notificationsInitialized = await notifications.init();
         
-        // Display favorites first (this is quick)
+        // Display favorites first (dit gebruikt geen API)
         this.displayFavorites();
         
-        // Load pre-releases first if we have favorites
+        // Load pre-releases EERST als we favorieten hebben
         if (this.favorites.length) {
             try {
                 // Switch to pre-releases tab to show loading immediately
                 this.switchTab('pre-releases');
                 
-                // Load pre-releases first with priority
-                await this.loadPreReleases();
+                // Load pre-releases first with highest priority
+                await this.loadPreReleases(true); // pass true to indicate high priority
                 
-                // Then check for new releases and load recommendations in parallel
-                await Promise.all([
-                    this.checkNewReleases(),
-                    this.loadRecommendations(),
-                    this.loadTrackRecommendations()
-                ]);
+                // Vertraag andere API-intensieve operaties
+                setTimeout(async () => {
+                    // Then check for new releases (secondary priority)
+                    await this.checkNewReleases();
+                    
+                    // Complete notifications initialization
+                    if (notificationsInitialized) {
+                        this.notificationsEnabled = await notifications.updateSubscriptionStatus();
+                        ui.updateNotificationToggle(this.notificationsEnabled);
+                    }
+                    
+                    // Vertraag de minst belangrijke API-aanroepen nog verder
+                    setTimeout(async () => {
+                        // Load recommendations (lowest priority)
+                        await this.loadRecommendations();
+                        await this.loadTrackRecommendations();
+                    }, 2000); // wacht 2 seconden voor de minst belangrijke API-aanroepen
+                }, 1000); // wacht 1 seconde voor secundaire prioriteitsaanroepen
             } catch (error) {
                 console.error('Error in initialization sequence:', error);
                 ui.showMessage('Er is een fout opgetreden bij het initialiseren van de app', 'error');
@@ -365,14 +374,6 @@ class MusicAlertApp {
                 ui.hideLoading();
             }
             
-            // Notify service worker that check is complete
-            if (background && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                    type: 'CHECK_COMPLETE',
-                    releases: newReleases.length
-                });
-            }
-            
             return newReleases;
         } catch (error) {
             if (!background) {
@@ -473,8 +474,9 @@ class MusicAlertApp {
 
     /**
      * Load pre-releases for favorite artists
+     * @param {boolean} highPriority - Whether to load with high priority
      */
-    async loadPreReleases() {
+    async loadPreReleases(highPriority = false) {
         if (!this.favorites.length) {
             ui.displayPreReleases([]);
             return;
@@ -507,32 +509,18 @@ class MusicAlertApp {
                 console.log('Forcing refresh of pre-releases cache');
             }
             
-            // Prioritize pre-releases by setting a specific flag for the API call
-            let preReleases = [];
-            try {
-                preReleases = await api.getPreReleases(this.favorites, 10, true); // Add priority flag
-            } catch (apiError) {
-                console.error('API error getting pre-releases:', apiError);
-                ui.showMessage('Er is een probleem met de verbinding naar Spotify. Probeer het later opnieuw.', 'error');
-            }
-            
+            // Pass high priority flag to API call
+            const preReleases = await api.getPreReleases(this.favorites, 10, highPriority);
             console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
             
-            // Display the results even if empty
-            if (ui && typeof ui.displayPreReleases === 'function') {
-                ui.displayPreReleases(preReleases || []);
-            } else {
-                console.error('UI service not available or displayPreReleases not defined');
-            }
-            
-            ui.hideLoading();
-            
-            // Show appropriate message based on results
-            if (!preReleases || preReleases.length === 0) {
-                ui.showMessage('Geen aankomende releases gevonden. API-limiet mogelijk bereikt. Probeer het later opnieuw.', 'info');
-            } else if (preReleases.length > 0) {
+            if (preReleases?.length === 0) {
+                ui.showMessage('Geen aankomende releases gevonden of API-limiet bereikt. Probeer het later opnieuw.', 'info');
+            } else if (preReleases?.length > 0) {
                 ui.showMessage(`${preReleases.length} aankomende releases gevonden`, 'success');
             }
+            
+            ui.displayPreReleases(preReleases);
+            ui.hideLoading();
             
             return preReleases;
         } catch (error) {
@@ -543,13 +531,12 @@ class MusicAlertApp {
             const container = document.getElementById('pre-releases');
             if (container) {
                 container.innerHTML = `
-                    <div class="text-center py-8">
+                    <div class="col-span-full text-center py-8">
                         <div class="text-gray-400 mb-4">
                             <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
                         <p class="text-gray-700">Er is een fout opgetreden bij het laden van aankomende releases</p>
-                        <p class="text-gray-500 text-sm mt-2">De Spotify API heeft niet correct geantwoord of is niet beschikbaar.</p>
-                        <p class="text-gray-500 text-xs mt-2">Foutdetails: ${error.message || 'Onbekende fout'}</p>
+                        <p class="text-gray-500 text-sm mt-2">Waarschijnlijk heb je de API-limiet bereikt. Probeer het later opnieuw.</p>
                         <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
                             Opnieuw proberen
                         </button>
@@ -557,9 +544,7 @@ class MusicAlertApp {
                 `;
             }
             
-            ui.showMessage('Probleem bij laden van aankomende releases. Spotify API mogelijk niet beschikbaar.', 'error');
-            
-            return [];
+            ui.showMessage('API-limiet bereikt. Je hebt te veel verzoeken gedaan naar de Spotify API.', 'error');
         }
     }
 
@@ -568,30 +553,14 @@ class MusicAlertApp {
      */
     async loadTrackRecommendations() {
         if (!this.favorites.length) {
-            // Check if the UI function exists, otherwise do nothing
-            if (typeof ui.displayTrackRecommendations === 'function') {
-                ui.displayTrackRecommendations([]);
-            } else {
-                console.warn('ui.displayTrackRecommendations is not defined');
-            }
+            ui.displayTrackRecommendations([]);
             return;
         }
         
         try {
             const artistIds = this.favorites.map(fav => fav.id);
             const recommendedTracks = await api.getTrackRecommendations(artistIds, 12);
-            
-            // Check if the UI function exists before calling it
-            if (typeof ui.displayTrackRecommendations === 'function') {
-                ui.displayTrackRecommendations(recommendedTracks);
-            } else {
-                console.warn('ui.displayTrackRecommendations is not defined');
-                // Use an alternative if available
-                if (typeof ui.displayRecommendations === 'function') {
-                    console.log('Using ui.displayRecommendations as fallback');
-                    ui.displayRecommendations(recommendedTracks);
-                }
-            }
+            ui.displayTrackRecommendations(recommendedTracks);
         } catch (error) {
             console.error('Error loading track recommendations:', error);
         }
