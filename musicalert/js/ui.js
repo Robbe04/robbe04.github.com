@@ -431,6 +431,7 @@ class UIService {
         albums.forEach(album => {
             const releaseDate = new Date(album.release_date).toLocaleDateString('nl-NL');
             const previewTrack = album.tracks.items.find(track => track.preview_url);
+            const hasMultipleTracks = album.total_tracks > 1;
             
             html += `
                 <div class="album-card bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 animate__animated animate__fadeIn">
@@ -446,6 +447,11 @@ class UIService {
                                 ${album.album_type.toUpperCase()}
                             </span>
                             <span class="text-xs font-medium text-white ml-2">${releaseDate}</span>
+                            ${hasMultipleTracks ? 
+                                `<span class="text-xs font-medium text-white ml-2">
+                                    <i class="fas fa-list-ul mr-1"></i>${album.total_tracks} tracks
+                                </span>` : ''
+                            }
                         </div>
                     </div>
                     <div class="p-4">
@@ -455,21 +461,24 @@ class UIService {
                             <div class="mb-4">
                                 <div class="flex justify-between items-center mb-1">
                                     <span class="text-xs text-gray-500">${previewTrack.name}</span>
-                                    <span class="text-xs text-gray-500">${this.formatDuration(previewTrack.duration_ms)}</span>
+                                    <span class="text-xs text-gray-500 track-duration">${this.formatDuration(previewTrack.duration_ms)}</span>
                                 </div>
                                 <div class="audio-visualizer" id="visualizer-${previewTrack.id}" data-track-id="${previewTrack.id}">
                                     ${Array(20).fill().map(() => `<div class="audio-bar" style="height: ${5 + Math.random() * 25}px;"></div>`).join('')}
                                 </div>
-                                <audio 
-                                    id="audio-${previewTrack.id}" 
-                                    class="w-full audio-player" 
-                                    src="${previewTrack.preview_url}" 
-                                    data-track-id="${previewTrack.id}"
-                                    controls
-                                    data-artist-id="${artist.id}"
-                                    data-album-name="${album.name}"
-                                    data-track-name="${previewTrack.name}"
-                                ></audio>
+                                <div class="audio-container">
+                                    <audio 
+                                        id="audio-${previewTrack.id}" 
+                                        class="w-full audio-player" 
+                                        src="${previewTrack.preview_url}" 
+                                        data-track-id="${previewTrack.id}"
+                                        data-track-duration="${previewTrack.duration_ms}"
+                                        controls
+                                        data-artist-id="${artist.id}"
+                                        data-album-name="${album.name}"
+                                        data-track-name="${previewTrack.name}"
+                                    ></audio>
+                                </div>
                             </div>
                         ` : `
                             <p class="text-red-500 mb-4 text-sm">Preview niet beschikbaar</p>
@@ -484,7 +493,7 @@ class UIService {
                                <i class="fas fa-share-alt"></i>
                             </button>
                         </div>
-                        ${album.total_tracks > 1 ? `
+                        ${hasMultipleTracks ? `
                             <button onclick="ui.showAlbumTracks('${album.id}', '${album.name}', '${artist.name}')" 
                                class="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg transition flex items-center justify-center">
                                <i class="fas fa-list mr-2"></i>Bekijk alle ${album.total_tracks} tracks
@@ -554,8 +563,9 @@ class UIService {
      * Format track duration from milliseconds to MM:SS format
      */
     formatDuration(ms) {
+        if (!ms) return "0:00";
         const minutes = Math.floor(ms / 60000);
-        const seconds = ((ms % 60000) / 1000).toFixed(0);
+        const seconds = Math.floor((ms % 60000) / 1000);
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 
@@ -605,6 +615,7 @@ class UIService {
             if (album && album.tracks && album.tracks.items) {
                 album.tracks.items.forEach((track, index) => {
                     const hasPreview = track.preview_url ? true : false;
+                    const trackDuration = this.formatDuration(track.duration_ms);
                     
                     modalHtml += `
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -615,7 +626,7 @@ class UIService {
                                     '<span class="ml-1 px-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs rounded">E</span>' : 
                                     ''}
                             </td>
-                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">${this.formatDuration(track.duration_ms)}</td>
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">${trackDuration}</td>
                             <td class="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
                                 ${hasPreview ? 
                                     `<button 
@@ -628,6 +639,7 @@ class UIService {
                                         data-album-name="${albumName.replace(/"/g, '&quot;')}"
                                         data-album-id="${albumId}"
                                         data-album-image="${album.images[0]?.url || ''}"
+                                        data-track-duration="${track.duration_ms}"
                                     >
                                         <i class="fas fa-play"></i>
                                     </button>` : 

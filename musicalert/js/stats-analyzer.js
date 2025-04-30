@@ -60,6 +60,17 @@ class StatsAnalyzer {
     }
     
     /**
+     * Format track duration from milliseconds to MM:SS format
+     * @param {number} ms - Duration in milliseconds
+     * @returns {string} Formatted duration as MM:SS
+     */
+    formatDuration(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+    
+    /**
      * Bereken genre voorkeuren op basis van luistergeschiedenis
      */
     calculateGenrePreferences() {

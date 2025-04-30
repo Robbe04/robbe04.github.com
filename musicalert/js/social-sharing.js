@@ -222,6 +222,26 @@ class SocialSharing {
     }
     
     /**
+     * Format track duration from milliseconds to MM:SS format
+     * @param {number} ms - Duration in milliseconds
+     * @returns {string} Formatted duration as MM:SS
+     */
+    formatTrackDuration(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+    
+    /**
+     * Checks if an album has multiple tracks
+     * @param {Object} album - The album object
+     * @returns {boolean} True if the album has more than one track
+     */
+    hasMultipleTracks(album) {
+        return album && album.total_tracks && album.total_tracks > 1;
+    }
+    
+    /**
      * Converteer een normale gedeelde playlist naar een collaborative playlist
      * @param {string} playlistId - ID van de playlist
      * @returns {boolean} Succes

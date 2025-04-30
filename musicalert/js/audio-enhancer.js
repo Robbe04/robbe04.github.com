@@ -134,6 +134,12 @@ class AudioEnhancer {
             // Sla de huidige source op
             this.currentSource = source;
             
+            // Voeg durationText toe als die nog niet bestaat
+            if (!audioElement.dataset.durationAdded) {
+                this.addDurationDisplay(audioElement);
+                audioElement.dataset.durationAdded = "true";
+            }
+            
             console.log('Audio element verbeterd');
             return true;
         } catch (error) {
@@ -170,6 +176,40 @@ class AudioEnhancer {
             childList: true, 
             subtree: true 
         });
+    }
+    
+    /**
+     * Voeg duurweergave toe aan audio-element
+     * @param {HTMLAudioElement} audioElement - Het audio-element
+     */
+    addDurationDisplay(audioElement) {
+        // Controleer of er een duur beschikbaar is in de dataset
+        if (audioElement.dataset.trackDuration) {
+            const durationMs = parseInt(audioElement.dataset.trackDuration);
+            if (!isNaN(durationMs)) {
+                const durationFormatted = this.formatDuration(durationMs);
+                
+                // Zoek de parent container voor dit audio element
+                const parentContainer = audioElement.closest('.audio-container');
+                if (parentContainer) {
+                    const durationElement = parentContainer.querySelector('.track-duration');
+                    if (durationElement) {
+                        durationElement.textContent = durationFormatted;
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Format track duration from milliseconds to MM:SS format
+     * @param {number} ms - Duration in milliseconds
+     * @returns {string} Formatted duration as MM:SS
+     */
+    formatDuration(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
     
     /**

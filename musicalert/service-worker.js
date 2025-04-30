@@ -164,5 +164,4 @@ self.addEventListener('message', event => {
   if (event.data && event.data.type === 'CHECK_COMPLETE') {
     console.log('Background sync: Client completed checking for new releases');
   }
-}
-);
+});

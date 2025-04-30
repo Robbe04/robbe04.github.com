@@ -672,7 +672,8 @@ class SpotifyApiService {
                         
                         return {
                             ...track,
-                            audioFeatures: audioFeatures
+                            audioFeatures: audioFeatures,
+                            duration: this.formatDuration(track.duration_ms) // Include formatted duration
                         };
                     } catch (error) {
                         console.error('Error fetching audio features:', error);
@@ -697,11 +698,11 @@ class SpotifyApiService {
         if (!albumId) throw new Error('Album ID is required');
         
         try {
-            await this.checkAndRefreshToken();
+            const token = await this.getToken();
             
             const response = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
                 headers: {
-                    'Authorization': `Bearer ${this.token}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
@@ -714,6 +715,27 @@ class SpotifyApiService {
             console.error('Error in getAlbum:', error);
             throw error;
         }
+    }
+    
+    /**
+     * Format track duration from milliseconds to MM:SS format
+     * @param {number} ms - Duration in milliseconds
+     * @returns {string} Formatted duration as MM:SS
+     */
+    formatDuration(ms) {
+        if (!ms || isNaN(ms)) return "0:00";
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+    
+    /**
+     * Check if an album has multiple tracks
+     * @param {Object} album - Album object from Spotify API
+     * @returns {boolean} True if album has multiple tracks
+     */
+    hasMultipleTracks(album) {
+        return album && album.total_tracks && album.total_tracks > 1;
     }
 }
 

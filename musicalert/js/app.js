@@ -1046,12 +1046,14 @@ class MusicAlertApp {
                 const albumName = button.dataset.albumName;
                 const albumId = button.dataset.albumId;
                 const albumImage = button.dataset.albumImage;
+                const trackDuration = button.dataset.trackDuration;
                 
                 // Create track object to pass to the preview player
                 const track = {
                     id: trackId,
                     name: trackName,
                     preview_url: previewUrl,
+                    duration_ms: trackDuration,
                     artists: [{ id: artistId, name: artistName }],
                     album: {
                         id: albumId,
