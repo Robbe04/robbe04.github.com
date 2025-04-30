@@ -590,7 +590,7 @@ class UIService {
                                 <h3 class="font-bold flex items-center">
                                     <i class="fas fa-music mr-2"></i>${albumName}
                                 </h3>
-                                <button onclick="ui.closeAlbumTracksModal()" class="text-white hover:text-gray-200">
+                                <button onclick="event.stopPropagation(); ui.closeAlbumTracksModal()" class="text-white hover:text-gray-200">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
@@ -669,7 +669,21 @@ class UIService {
             // Add modal to document
             const modalContainer = document.createElement('div');
             modalContainer.innerHTML = modalHtml;
-            document.body.appendChild(modalContainer.firstChild);
+            const modalElement = modalContainer.firstChild;
+            document.body.appendChild(modalElement);
+            
+            // Prevent clicks on the modal content from closing the modal
+            const modalContent = modalElement.querySelector('.bg-white');
+            modalContent.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            
+            // Close modal when clicking outside the content
+            modalElement.addEventListener('click', (e) => {
+                if (e.target === modalElement) {
+                    this.closeAlbumTracksModal();
+                }
+            });
             
             // Setup preview buttons
             setTimeout(() => {
