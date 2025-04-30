@@ -371,6 +371,320 @@ class UIService {
     }
 
     /**
+     * Display latest tracks
+     */
+    displayLatestTracks(artist, albums, relatedArtists = []) {
+        const resultsContainer = document.getElementById('results');
+        const artistImg = artist.images.length > 0 ? artist.images[0].url : '';
+        const artistGenres = artist.genres.length ? 
+            artist.genres.map(genre => this.formatGenreName(genre)).join(', ') : 
+            'DJ / Producer';
+        const isFavorite = app.favorites.some(fav => fav.id === artist.id);
+        
+        let html = `
+            <div class="animate__animated animate__fadeIn">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
+                    <div class="w-48 h-48 rounded-xl overflow-hidden flex-shrink-0 relative">
+                        ${isFavorite ? 
+                            `<div class="is-favorite">
+                                <i class="fas fa-heart"></i> Gevolgd
+                            </div>` : ''
+                        }
+                        ${artistImg ? 
+                            `<img src="${artistImg}" alt="${artist.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                            <h2 class="text-3xl font-bold text-primary mb-2 md:mb-0">${artist.name}</h2>
+                            <button onclick="app.toggleFavorite('${artist.id}', '${artist.name}', '${artistImg}')" 
+                                class="inline-flex items-center justify-center px-4 py-2 rounded-lg ${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark'} text-white transition self-center md:self-auto">
+                                <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'} mr-2"></i>
+                                ${isFavorite ? 'Niet meer volgen' : 'Volgen'}
+                            </button>
+                        </div>
+                        <p class="text-gray-600 mb-4">${artistGenres}</p>
+                        <div class="flex items-center justify-center md:justify-start mb-4">
+                            <div class="text-yellow-500 mr-2">
+                                ${this.getPopularityStars(artist.popularity)}
+                            </div>
+                            <span class="text-sm text-gray-600">${artist.popularity}% populariteit</span>
+                        </div>
+                        <p class="text-gray-600">
+                            ${artist.followers.total.toLocaleString('nl-NL')} volgers op Spotify
+                        </p>
+                        <div class="mt-4">
+                            <a href="${artist.external_urls.spotify}" target="_blank" 
+                               class="inline-flex items-center text-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
+                               <i class="fab fa-spotify mr-2"></i>Bekijk op Spotify
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold mb-6 text-primary">Nieuwste Releases</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        `;
+        
+        albums.forEach(album => {
+            const releaseDate = new Date(album.release_date).toLocaleDateString('nl-NL');
+            const previewTrack = album.tracks.items.find(track => track.preview_url);
+            
+            html += `
+                <div class="album-card bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 animate__animated animate__fadeIn">
+                    <div class="relative h-48 bg-gray-200 overflow-hidden">
+                        ${album.images.length ? 
+                            `<img src="${album.images[0].url}" alt="${album.name}" class="w-full h-full object-cover">` : 
+                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                <i class="fas fa-music text-4xl"></i>
+                            </div>`
+                        }
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                            <span class="text-xs font-medium text-white bg-primary bg-opacity-90 rounded-full px-2 py-1">
+                                ${album.album_type.toUpperCase()}
+                            </span>
+                            <span class="text-xs font-medium text-white ml-2">${releaseDate}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-lg mb-1">${album.name}</h4>
+                        <p class="text-gray-600 text-sm mb-3">${album.total_tracks} ${album.total_tracks === 1 ? 'nummer' : 'nummers'}</p>
+                        ${previewTrack ? `
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs text-gray-500">${previewTrack.name}</span>
+                                    <span class="text-xs text-gray-500">${this.formatDuration(previewTrack.duration_ms)}</span>
+                                </div>
+                                <div class="audio-visualizer" id="visualizer-${previewTrack.id}" data-track-id="${previewTrack.id}">
+                                    ${Array(20).fill().map(() => `<div class="audio-bar" style="height: ${5 + Math.random() * 25}px;"></div>`).join('')}
+                                </div>
+                                <audio 
+                                    id="audio-${previewTrack.id}" 
+                                    class="w-full audio-player" 
+                                    src="${previewTrack.preview_url}" 
+                                    data-track-id="${previewTrack.id}"
+                                    controls
+                                    data-artist-id="${artist.id}"
+                                    data-album-name="${album.name}"
+                                    data-track-name="${previewTrack.name}"
+                                ></audio>
+                            </div>
+                        ` : `
+                            <p class="text-red-500 mb-4 text-sm">Preview niet beschikbaar</p>
+                        `}
+                        <div class="flex gap-2 mb-2">
+                            <a href="${album.external_urls.spotify}" target="_blank" 
+                               class="flex-1 text-center bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition">
+                               <i class="fab fa-spotify mr-2"></i>Beluisteren
+                            </a>
+                            <button onclick="app.shareRelease('${artist.name}', '${album.name}', '${album.external_urls.spotify}')" 
+                               class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
+                               <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                        ${album.total_tracks > 1 ? `
+                            <button onclick="ui.showAlbumTracks('${album.id}', '${album.name}', '${artist.name}')" 
+                               class="w-full mt-2 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg transition flex items-center justify-center">
+                               <i class="fas fa-list mr-2"></i>Bekijk alle ${album.total_tracks} tracks
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+        `;
+        
+        // Add related artists section
+        if (relatedArtists && relatedArtists.length > 0) {
+            html += `
+                <h3 class="text-2xl font-bold my-6 text-primary">Vergelijkbare DJ's</h3>
+                <div class="flex overflow-x-auto pb-4 space-x-4 related-artists-scroll">
+            `;
+            
+            relatedArtists.forEach(relArtist => {
+                const isFavorite = app.favorites.some(fav => fav.id === relArtist.id);
+                
+                html += `
+                    <div class="flex-shrink-0 w-48 bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="h-48 bg-gray-200 overflow-hidden relative">
+                            ${relArtist.images.length ? 
+                                `<img src="${relArtist.images[0].url}" alt="${relArtist.name}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                    <i class="fas fa-music text-4xl"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div class="p-3">
+                            <h4 class="font-bold truncate">${relArtist.name}</h4>
+                            <p class="text-gray-600 text-xs mb-2 truncate">
+                                ${relArtist.genres.length ? this.formatGenreName(relArtist.genres[0]) : 'DJ / Producer'}
+                            </p>
+                            <div class="flex gap-1">
+                                <button onclick="app.getLatestTracks('${relArtist.id}')" 
+                                    class="flex-1 bg-primary hover:bg-primary-dark text-white py-1 text-sm rounded-lg transition">
+                                    Verkennen
+                                </button>
+                                <button onclick="app.toggleFavorite('${relArtist.id}', '${relArtist.name}', '${relArtist.images.length ? relArtist.images[0].url : ''}')" 
+                                    class="${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} p-1 rounded-lg transition">
+                                    <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+            `;
+        }
+        
+        resultsContainer.innerHTML = html;
+        
+        // Initialize audio visualizers
+        this.initAudioVisualizers();
+    }
+
+    /**
+     * Format track duration from milliseconds to MM:SS format
+     */
+    formatDuration(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = ((ms % 60000) / 1000).toFixed(0);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }
+
+    /**
+     * Show album tracks in a modal
+     */
+    async showAlbumTracks(albumId, albumName, artistName) {
+        try {
+            this.showLoading('Tracks laden...');
+            
+            // Fetch album details with tracks
+            const album = await api.getAlbum(albumId);
+            
+            this.hideLoading();
+            
+            // Create modal HTML
+            let modalHtml = `
+                <div id="album-tracks-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center animate__animated animate__fadeIn">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-lg overflow-hidden">
+                        <div class="p-4 bg-primary text-white">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold flex items-center">
+                                    <i class="fas fa-music mr-2"></i>${albumName}
+                                </h3>
+                                <button onclick="ui.closeAlbumTracksModal()" class="text-white hover:text-gray-200">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <p class="text-sm opacity-90">${artistName}</p>
+                        </div>
+                        
+                        <div class="p-0">
+                            <div class="max-h-96 overflow-y-auto">
+                                <table class="w-full">
+                                    <thead class="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                                        <tr>
+                                            <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">#</th>
+                                            <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Titel</th>
+                                            <th class="py-2 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Duur</th>
+                                            <th class="py-2 px-4 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+            `;
+            
+            // Add tracks
+            if (album && album.tracks && album.tracks.items) {
+                album.tracks.items.forEach((track, index) => {
+                    const hasPreview = track.preview_url ? true : false;
+                    
+                    modalHtml += `
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${index + 1}</td>
+                            <td class="py-3 px-4 whitespace-normal text-sm text-gray-900 dark:text-gray-200 font-medium">
+                                ${track.name}
+                                ${track.explicit ? 
+                                    '<span class="ml-1 px-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 text-xs rounded">E</span>' : 
+                                    ''}
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-right">${this.formatDuration(track.duration_ms)}</td>
+                            <td class="py-3 px-4 whitespace-nowrap text-right text-sm font-medium">
+                                ${hasPreview ? 
+                                    `<button 
+                                        class="preview-play-btn text-primary hover:text-primary-dark"
+                                        data-preview-url="${track.preview_url}"
+                                        data-track-id="${track.id}"
+                                        data-track-name="${track.name.replace(/"/g, '&quot;')}"
+                                        data-artist-name="${artistName.replace(/"/g, '&quot;')}"
+                                        data-artist-id="${track.artists[0]?.id || ''}"
+                                        data-album-name="${albumName.replace(/"/g, '&quot;')}"
+                                        data-album-id="${albumId}"
+                                        data-album-image="${album.images[0]?.url || ''}"
+                                    >
+                                        <i class="fas fa-play"></i>
+                                    </button>` : 
+                                    '<span class="text-gray-400 dark:text-gray-500"><i class="fas fa-ban"></i></span>'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            modalHtml += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                            <a href="${album.external_urls.spotify}" target="_blank" class="block w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg transition">
+                                <i class="fab fa-spotify mr-2"></i>Beluisteren op Spotify
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to document
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHtml;
+            document.body.appendChild(modalContainer.firstChild);
+            
+            // Setup preview buttons
+            setTimeout(() => {
+                app.setupTrackPreviewButtons();
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error showing album tracks:', error);
+            this.hideLoading();
+            this.showMessage('Fout bij laden van album tracks', 'error');
+        }
+    }
+
+    /**
+     * Close album tracks modal
+     */
+    closeAlbumTracksModal() {
+        const modal = document.getElementById('album-tracks-modal');
+        if (modal) {
+            modal.classList.add('animate__fadeOut');
+            setTimeout(() => {
+                modal.remove();
+            }, 300);
+        }
+    }
+
+    /**
      * Display favorites with sorting and filtering options
      */
     displayFavorites(favorites) {
@@ -1042,176 +1356,6 @@ class UIService {
         });
         
         container.innerHTML = html;
-    }
-
-    /**
-     * Display latest tracks
-     */
-    displayLatestTracks(artist, albums, relatedArtists = []) {
-        const resultsContainer = document.getElementById('results');
-        const artistImg = artist.images.length > 0 ? artist.images[0].url : '';
-        const artistGenres = artist.genres.length ? 
-            artist.genres.map(genre => this.formatGenreName(genre)).join(', ') : 
-            'DJ / Producer';
-        const isFavorite = app.favorites.some(fav => fav.id === artist.id);
-        
-        let html = `
-            <div class="animate__animated animate__fadeIn">
-                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
-                    <div class="w-48 h-48 rounded-xl overflow-hidden flex-shrink-0 relative">
-                        ${isFavorite ? 
-                            `<div class="is-favorite">
-                                <i class="fas fa-heart"></i> Gevolgd
-                            </div>` : ''
-                        }
-                        ${artistImg ? 
-                            `<img src="${artistImg}" alt="${artist.name}" class="w-full h-full object-cover">` : 
-                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
-                                <i class="fas fa-music text-4xl"></i>
-                            </div>`
-                        }
-                    </div>
-                    <div class="flex-1 text-center md:text-left">
-                        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-                            <h2 class="text-3xl font-bold text-primary mb-2 md:mb-0">${artist.name}</h2>
-                            <button onclick="app.toggleFavorite('${artist.id}', '${artist.name}', '${artistImg}')" 
-                                class="inline-flex items-center justify-center px-4 py-2 rounded-lg ${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark'} text-white transition self-center md:self-auto">
-                                <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'} mr-2"></i>
-                                ${isFavorite ? 'Niet meer volgen' : 'Volgen'}
-                            </button>
-                        </div>
-                        <p class="text-gray-600 mb-4">${artistGenres}</p>
-                        <div class="flex items-center justify-center md:justify-start mb-4">
-                            <div class="text-yellow-500 mr-2">
-                                ${this.getPopularityStars(artist.popularity)}
-                            </div>
-                            <span class="text-sm text-gray-600">${artist.popularity}% populariteit</span>
-                        </div>
-                        <p class="text-gray-600">
-                            ${artist.followers.total.toLocaleString('nl-NL')} volgers op Spotify
-                        </p>
-                        <div class="mt-4">
-                            <a href="${artist.external_urls.spotify}" target="_blank" 
-                               class="inline-flex items-center text-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
-                               <i class="fab fa-spotify mr-2"></i>Bekijk op Spotify
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <h3 class="text-2xl font-bold mb-6 text-primary">Nieuwste Releases</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        `;
-        
-        albums.forEach(album => {
-            const releaseDate = new Date(album.release_date).toLocaleDateString('nl-NL');
-            const previewTrack = album.tracks.items.find(track => track.preview_url);
-            
-            html += `
-                <div class="album-card bg-white rounded-xl overflow-hidden shadow-md transition-all duration-300 animate__animated animate__fadeIn">
-                    <div class="relative h-48 bg-gray-200 overflow-hidden">
-                        ${album.images.length ? 
-                            `<img src="${album.images[0].url}" alt="${album.name}" class="w-full h-full object-cover">` : 
-                            `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
-                                <i class="fas fa-music text-4xl"></i>
-                            </div>`
-                        }
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
-                            <span class="text-xs font-medium text-white bg-primary bg-opacity-90 rounded-full px-2 py-1">
-                                ${album.album_type.toUpperCase()}
-                            </span>
-                            <span class="text-xs font-medium text-white ml-2">${releaseDate}</span>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <h4 class="font-bold text-lg mb-1">${album.name}</h4>
-                        <p class="text-gray-600 text-sm mb-3">${album.total_tracks} nummers</p>
-                        ${previewTrack ? `
-                            <div class="mb-4">
-                                <div class="audio-visualizer" id="visualizer-${previewTrack.id}" data-track-id="${previewTrack.id}">
-                                    ${Array(20).fill().map(() => `<div class="audio-bar" style="height: ${5 + Math.random() * 25}px;"></div>`).join('')}
-                                </div>
-                                <audio 
-                                    id="audio-${previewTrack.id}" 
-                                    class="w-full audio-player" 
-                                    src="${previewTrack.preview_url}" 
-                                    data-track-id="${previewTrack.id}"
-                                    controls
-                                    data-artist-id="${artist.id}"
-                                    data-album-name="${album.name}"
-                                    data-track-name="${previewTrack.name}"
-                                ></audio>
-                            </div>
-                        ` : `
-                            <p class="text-red-500 mb-4 text-sm">Preview niet beschikbaar</p>
-                        `}
-                        <div class="flex gap-2 mb-2">
-                            <a href="${album.external_urls.spotify}" target="_blank" 
-                               class="flex-1 text-center bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition">
-                               <i class="fab fa-spotify mr-2"></i>Beluisteren
-                            </a>
-                            <button onclick="app.shareRelease('${artist.name}', '${album.name}', '${album.external_urls.spotify}')" 
-                               class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition">
-                               <i class="fas fa-share-alt"></i>Delen
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += `
-                </div>
-        `;
-        
-        // Add related artists section
-        if (relatedArtists && relatedArtists.length > 0) {
-            html += `
-                <h3 class="text-2xl font-bold my-6 text-primary">Vergelijkbare DJ's</h3>
-                <div class="flex overflow-x-auto pb-4 space-x-4 related-artists-scroll">
-            `;
-            
-            relatedArtists.forEach(relArtist => {
-                const isFavorite = app.favorites.some(fav => fav.id === relArtist.id);
-                
-                html += `
-                    <div class="flex-shrink-0 w-48 bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
-                        <div class="h-48 bg-gray-200 overflow-hidden relative">
-                            ${relArtist.images.length ? 
-                                `<img src="${relArtist.images[0].url}" alt="${relArtist.name}" class="w-full h-full object-cover">` : 
-                                `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
-                                    <i class="fas fa-music text-4xl"></i>
-                                </div>`
-                            }
-                        </div>
-                        <div class="p-3">
-                            <h4 class="font-bold truncate">${relArtist.name}</h4>
-                            <p class="text-gray-600 text-xs mb-2 truncate">
-                                ${relArtist.genres.length ? this.formatGenreName(relArtist.genres[0]) : 'DJ / Producer'}
-                            </p>
-                            <div class="flex gap-1">
-                                <button onclick="app.getLatestTracks('${relArtist.id}')" 
-                                    class="flex-1 bg-primary hover:bg-primary-dark text-white py-1 text-sm rounded-lg transition">
-                                    Verkennen
-                                </button>
-                                <button onclick="app.toggleFavorite('${relArtist.id}', '${relArtist.name}', '${relArtist.images.length ? relArtist.images[0].url : ''}')" 
-                                    class="${isFavorite ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'} p-1 rounded-lg transition">
-                                    <i class="fas ${isFavorite ? 'fa-heart-broken' : 'fa-heart'}"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += `
-                </div>
-            `;
-        }
-        
-        resultsContainer.innerHTML = html;
-        
-        // Initialize audio visualizers
-        this.initAudioVisualizers();
     }
 
     /**

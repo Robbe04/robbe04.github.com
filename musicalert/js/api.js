@@ -689,6 +689,32 @@ class SpotifyApiService {
             return [];
         }
     }
+
+    /**
+     * Get a specific album with all tracks
+     */
+    async getAlbum(albumId) {
+        if (!albumId) throw new Error('Album ID is required');
+        
+        try {
+            await this.checkAndRefreshToken();
+            
+            const response = await fetch(`https://api.spotify.com/v1/albums/${albumId}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Error fetching album: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error in getAlbum:', error);
+            throw error;
+        }
+    }
 }
 
 // Initialize API service

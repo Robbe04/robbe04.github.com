@@ -555,3 +555,84 @@ select:focus-visible {
     cursor: pointer;
     position: relative;
 }
+
+/* Album tracks modal styles */
+#album-tracks-modal {
+    z-index: 60; /* Higher than other modals */
+}
+
+#album-tracks-modal table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#album-tracks-modal th {
+    position: sticky;
+    top: 0;
+    background-color: var(--card-bg);
+    z-index: 1;
+}
+
+#album-tracks-modal .preview-play-btn {
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: rgba(108, 74, 230, 0.1);
+    transition: all 0.2s ease;
+}
+
+#album-tracks-modal .preview-play-btn:hover {
+    background-color: rgba(108, 74, 230, 0.2);
+    transform: scale(1.1);
+}
+
+/* Mobile responsive adjustments for album tracks modal */
+@media (max-width: 640px) {
+    #album-tracks-modal table {
+        font-size: 0.8rem;
+    }
+    
+    #album-tracks-modal th,
+    #album-tracks-modal td {
+        padding: 0.5rem;
+    }
+    
+    #album-tracks-modal th:first-child,
+    #album-tracks-modal td:first-child {
+        width: 30px;
+        padding-right: 0;
+    }
+    
+    #album-tracks-modal th:last-child,
+    #album-tracks-modal td:last-child {
+        width: 40px;
+        padding-left: 0;
+    }
+    
+    /* Limit the track name width on small screens */
+    #album-tracks-modal td:nth-child(2) {
+        max-width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+/* Animation for modal */
+.animate__fadeOut {
+    animation-name: fadeOut;
+    animation-duration: 0.3s;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
