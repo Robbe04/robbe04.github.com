@@ -1,0 +1,84 @@
+/* ...existing code... */
+
+/* Loading dots animation */
+.loading-dots {
+    position: relative;
+}
+
+.loading-dots::after {
+    content: '';
+    animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60% { content: '...'; }
+    80%, 100% { content: ''; }
+}
+
+/* Skeleton loading animation */
+@keyframes skeleton-loading {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Track item hover effects */
+.track-item .play-btn {
+    transition: all 0.2s ease;
+}
+
+.track-item:hover .track-number {
+    display: none;
+}
+
+.track-item:hover .play-btn {
+    opacity: 1 !important;
+}
+
+/* Album modal animations */
+#album-tracks-modal .animate__fadeInUp {
+    animation-duration: 0.3s;
+}
+
+/* Quick stats styling */
+.recent-releases-count {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* DJ count badge */
+#favorites-count {
+    animation: bounce-in 0.3s ease-out;
+}
+
+@keyframes bounce-in {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Improved hover effects */
+.artist-card:hover {
+    transform: translateY(-2px);
+}
+
+.release-card:hover {
+    transform: translateY(-1px);
+}
+
+/* Better loading spinner */
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ...existing code... */

@@ -78,19 +78,19 @@ class MusicAlertApp {
         // Display favorites first (dit gebruikt geen API)
         this.displayFavorites();
         
-        // Load pre-releases EERST als we favorieten hebben
+        // Load nieuwe releases EERST als we favorieten hebben
         if (this.favorites.length) {
             try {
-                // Switch to pre-releases tab to show loading immediately
-                this.switchTab('pre-releases');
+                // Switch to notifications tab to show loading immediately (nieuwe releases)
+                this.switchTab('notifications');
                 
-                // Load pre-releases first with highest priority
-                await this.loadPreReleases(true); // pass true to indicate high priority
+                // Check for new releases first with highest priority
+                await this.checkNewReleases();
                 
                 // Vertraag andere API-intensieve operaties
                 setTimeout(async () => {
-                    // Then check for new releases (secondary priority)
-                    await this.checkNewReleases();
+                    // Then load pre-releases (secondary priority)
+                    await this.loadPreReleases(true);
                     
                     // Complete notifications initialization
                     if (notificationsInitialized) {
@@ -308,8 +308,15 @@ class MusicAlertApp {
         // Save to localStorage with backup
         this.saveFavoritesToStorage();
         
-        // Update UI
+        // Update UI - ALTIJD na wijzigingen
         this.displayFavorites();
+        
+        // Update artist details view if we're currently viewing this artist
+        const resultsContainer = document.getElementById('results');
+        if (resultsContainer && resultsContainer.innerHTML.includes(artistId)) {
+            // Re-render the artist details to update the favorite status
+            this.getLatestTracks(artistId);
+        }
         
         // Check for new releases if we added an artist
         if (existingIndex < 0) {
@@ -329,7 +336,76 @@ class MusicAlertApp {
      * Display favorites
      */
     displayFavorites() {
-        ui.displayFavorites(this.favorites);
+        // Debug logging
+        console.log('displayFavorites called with', this.favorites.length, 'favorites');
+        console.log('gevolgdeDJsUI available:', !!window.gevolgdeDJsUI);
+        
+        // Controleer of de module geladen is
+        if (window.gevolgdeDJsUI) {
+            try {
+                window.gevolgdeDJsUI.displayFavorites(this.favorites);
+            } catch (error) {
+                console.error('Error in gevolgdeDJsUI.displayFavorites:', error);
+                this._fallbackDisplayFavorites();
+            }
+        } else {
+            console.error('gevolgdeDJsUI module not loaded');
+            // Fallback: toon een simpele lijst
+            this._fallbackDisplayFavorites();
+        }
+    }
+
+    /**
+     * Fallback voor als de module niet geladen is
+     */
+    _fallbackDisplayFavorites() {
+        const container = document.getElementById('favorites');
+        if (container) {
+            if (!this.favorites.length) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-8">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fas fa-heart text-5xl"></i>
+                        </div>
+                        <p class="text-gray-500">Je hebt nog geen DJ's gevolgd</p>
+                        <p class="text-gray-500 text-sm mt-2">Zoek naar artiesten en voeg ze toe aan je favorieten</p>
+                    </div>
+                `;
+            } else {
+                // Toon een simpele lijst van favorieten
+                const html = this.favorites.map(artist => `
+                    <div class="artist-card bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col">
+                        <div class="h-40 bg-gray-200 overflow-hidden relative">
+                            <div class="is-favorite">
+                                <i class="fas fa-heart"></i> Gevolgd
+                            </div>
+                            ${artist.img ? 
+                                `<img src="${artist.img}" alt="${artist.name}" class="w-full h-full object-cover">` : 
+                                `<div class="w-full h-full flex items-center justify-center bg-gradient-to-r from-primary to-secondary text-white">
+                                    <i class="fas fa-music text-4xl"></i>
+                                </div>`
+                            }
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col">
+                            <h3 class="font-bold text-lg mb-1 truncate">${artist.name}</h3>
+                            <p class="text-gray-600 text-sm mb-3 truncate">DJ / Producer</p>
+                            <div class="mt-auto flex gap-2">
+                                <button onclick="app.getLatestTracks('${artist.id}')" 
+                                    class="flex-1 bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition flex items-center justify-center">
+                                    <i class="fas fa-headphones mr-2"></i>Muziek
+                                </button>
+                                <button onclick="app.toggleFavorite('${artist.id}')" 
+                                    class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition">
+                                    <i class="fas fa-heart-broken"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                container.innerHTML = html;
+            }
+        }
     }
 
     /**
@@ -337,24 +413,33 @@ class MusicAlertApp {
      * @param {boolean} background - Whether this is a background check
      */
     async checkNewReleases(background = false) {
+        // Debug logging
+        console.log('checkNewReleases called, background:', background);
+        console.log('nieuweReleasesUI available:', !!window.nieuweReleasesUI);
+        
         if (!this.favorites.length) {
-            ui.displayNotifications([]);
+            // Controleer of de module geladen is
+            if (window.nieuweReleasesUI) {
+                try {
+                    window.nieuweReleasesUI.displayNotifications([]);
+                } catch (error) {
+                    console.error('Error in nieuweReleasesUI.displayNotifications:', error);
+                }
+            } else {
+                console.error('nieuweReleasesUI module not loaded');
+            }
             return;
         }
         
         try {
             if (!background) {
-                // Show loading indicator in the notifications container
-                const container = document.getElementById('notifications');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="text-center py-8">
-                            <div class="text-gray-400 mb-4">
-                                <i class="fas fa-spinner fa-spin text-3xl loading-spinner"></i>
-                            </div>
-                            <p class="text-gray-500">Nieuwe releases laden...</p>
-                        </div>
-                    `;
+                // Show loading skeletons instead of basic loading
+                if (window.nieuweReleasesUI) {
+                    try {
+                        window.nieuweReleasesUI.showLoadingSkeletons();
+                    } catch (error) {
+                        console.error('Error in showLoadingSkeletons:', error);
+                    }
                 }
                 ui.showLoading('Nieuwe releases controleren...');
             }
@@ -370,8 +455,22 @@ class MusicAlertApp {
             // Only update UI if not a background check
             if (!background) {
                 console.log(`Displaying ${newReleases.length} new releases in the UI`);
-                ui.displayNotifications(newReleases);
+                // Controleer of de module geladen is
+                if (window.nieuweReleasesUI) {
+                    try {
+                        window.nieuweReleasesUI.displayNotifications(newReleases);
+                    } catch (error) {
+                        console.error('Error in nieuweReleasesUI.displayNotifications:', error);
+                    }
+                } else {
+                    console.error('nieuweReleasesUI module not loaded');
+                }
                 ui.hideLoading();
+                
+                // Show success notification
+                if (newReleases.length > 0) {
+                    ui.showMessage(`${newReleases.length} nieuwe release${newReleases.length === 1 ? '' : 's'} gevonden!`, 'success');
+                }
             }
             
             return newReleases;
@@ -478,13 +577,18 @@ class MusicAlertApp {
      */
     async loadPreReleases(highPriority = false) {
         if (!this.favorites.length) {
-            ui.displayPreReleases([]);
+            if (window.aankomendeReleasesUI) {
+                window.aankomendeReleasesUI.displayPreReleases([]);
+            } else {
+                console.error('aankomendeReleasesUI module not loaded');
+            }
             return;
         }
         
         try {
-            // Show loading indicator in both the overlay and pre-releases container
-            ui.showLoading('Aankomende releases laden...');
+            if (!highPriority) {
+                ui.showLoading('Presave mogelijkheden laden...');
+            }
             
             const container = document.getElementById('pre-releases');
             if (container) {
@@ -493,41 +597,60 @@ class MusicAlertApp {
                         <div class="text-gray-400 mb-4">
                             <i class="fas fa-spinner fa-spin text-3xl loading-spinner"></i>
                         </div>
-                        <p class="text-gray-500">Aankomende releases laden...</p>
-                        <p class="text-gray-500 text-xs mt-2">Dit kan even duren door API-beperkingen</p>
+                        <p class="text-gray-500">Presave mogelijkheden laden...</p>
+                        <p class="text-gray-500 text-xs mt-2">Zoekt naar releases in de komende week</p>
+                        <div class="mt-4 bg-blue-50 p-3 rounded-lg text-blue-800 text-sm">
+                            <p><i class="fas fa-info-circle mr-2"></i>We controleren je eerste ${Math.min(this.favorites.length, 25)} gevolgde artiesten</p>
+                            <p class="mt-1 text-xs">Alleen releases van vandaag tot 1 week vooruit (presave venster)</p>
+                            <p class="mt-1 text-xs">Tip: Voeg ?refresh toe aan de URL om cache te vernieuwen</p>
+                        </div>
                     </div>
                 `;
             }
             
-            console.log('Fetching pre-releases...');
+            console.log('Fetching presave opportunities for the next week...');
+            console.log('Favorites to check:', this.favorites.map(f => f.name));
             
-            // Clear cache if forcing refresh
             const forceRefresh = new URLSearchParams(window.location.search).has('refresh');
             if (forceRefresh) {
                 localStorage.removeItem('pre-releases-cache');
                 localStorage.removeItem('pre-releases-cache-expiry');
-                console.log('Forcing refresh of pre-releases cache');
+                console.log('Forcing refresh of presave cache');
             }
             
-            // Pass high priority flag to API call
-            const preReleases = await api.getPreReleases(this.favorites, 10, highPriority);
-            console.log(`Received ${preReleases?.length || 0} pre-releases from API`);
+            // Get all presave opportunities
+            const preReleases = await api.getPreReleases(this.favorites, 100, highPriority);
+            console.log(`Received ${preReleases?.length || 0} presave opportunities from API`);
             
-            if (preReleases?.length === 0) {
-                ui.showMessage('Geen aankomende releases gevonden of API-limiet bereikt. Probeer het later opnieuw.', 'info');
-            } else if (preReleases?.length > 0) {
-                ui.showMessage(`${preReleases.length} aankomende releases gevonden`, 'success');
+            if (!preReleases || preReleases.length === 0) {
+                ui.showMessage('Geen presave mogelijkheden gevonden in de komende week.', 'info');
+            } else if (preReleases.length > 0) {
+                ui.showMessage(`${preReleases.length} presave mogelijkheden gevonden in de komende week`, 'success');
+                
+                // Log examples
+                console.log('Presave opportunities:');
+                preReleases.forEach(release => {
+                    console.log(`- ${release.album.name} by ${release.artist.name} on ${release.album.release_date}`);
+                });
+            }
+
+            if (window.aankomendeReleasesUI) {
+                window.aankomendeReleasesUI.displayPreReleases(preReleases);
+            } else {
+                console.error('aankomendeReleasesUI module not loaded');
             }
             
-            ui.displayPreReleases(preReleases);
-            ui.hideLoading();
+            if (!highPriority) {
+                ui.hideLoading();
+            }
             
             return preReleases;
         } catch (error) {
-            ui.hideLoading();
+            if (!highPriority) {
+                ui.hideLoading();
+            }
             console.error('Error loading pre-releases:', error);
             
-            // Display error message in the pre-releases container
             const container = document.getElementById('pre-releases');
             if (container) {
                 container.innerHTML = `
@@ -535,16 +658,24 @@ class MusicAlertApp {
                         <div class="text-gray-400 mb-4">
                             <i class="fas fa-exclamation-triangle text-5xl"></i>
                         </div>
-                        <p class="text-gray-700">Er is een fout opgetreden bij het laden van aankomende releases</p>
-                        <p class="text-gray-500 text-sm mt-2">Waarschijnlijk heb je de API-limiet bereikt. Probeer het later opnieuw.</p>
-                        <button onclick="app.loadPreReleases()" class="mt-4 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
-                            Opnieuw proberen
-                        </button>
+                        <p class="text-gray-700">Er is een fout opgetreden bij het laden van presave mogelijkheden</p>
+                        <p class="text-gray-500 text-sm mt-2">Dit kan gebeuren door API-beperkingen. Probeer het over 5-10 minuten opnieuw.</p>
+                        <div class="mt-4 space-y-2">
+                            <button onclick="app.loadPreReleases()" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition">
+                                Opnieuw proberen
+                            </button>
+                            <a href="?refresh" class="block bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-refresh mr-2"></i>Cache vernieuwen
+                            </a>
+                            <p class="text-xs text-gray-400">
+                                Cache wordt 1 uur bewaard om API-verzoeken te beperken
+                            </p>
+                        </div>
                     </div>
                 `;
             }
             
-            ui.showMessage('API-limiet bereikt. Je hebt te veel verzoeken gedaan naar de Spotify API.', 'error');
+            ui.showMessage('API-limiet bereikt. Wacht 5-10 minuten voordat je het opnieuw probeert.', 'error');
         }
     }
 
@@ -567,7 +698,7 @@ class MusicAlertApp {
     }
 
     /**
-     * Switch between tabs (favorites, notifications, pre-releases, recommendations)
+     * Switch between tabs (favorites, notifications, pre-releases)
      */
     switchTab(tab) {
         // Update tab buttons
@@ -580,9 +711,6 @@ class MusicAlertApp {
         document.getElementById('tab-pre-releases').classList.remove('tab-active', 'text-primary');
         document.getElementById('tab-pre-releases').classList.add('text-gray-500');
         
-        document.getElementById('tab-recommendations').classList.remove('tab-active', 'text-primary');
-        document.getElementById('tab-recommendations').classList.add('text-gray-500');
-        
         // Handle events tab separately as it opens a modal
         document.getElementById('tab-events').classList.remove('tab-active', 'text-primary');
         document.getElementById('tab-events').classList.add('text-gray-500');
@@ -594,18 +722,17 @@ class MusicAlertApp {
         document.getElementById('favorites-content').classList.add('hidden');
         document.getElementById('notifications-content').classList.add('hidden');
         document.getElementById('pre-releases-content').classList.add('hidden');
-        document.getElementById('recommendations-content').classList.add('hidden');
         
         document.getElementById(`${tab}-content`).classList.remove('hidden');
         
         // Load tab-specific content if needed
-        if (tab === 'events') {
-            this.showEventsPanel();
-        } else if (tab === 'pre-releases' && document.getElementById('pre-releases').children.length === 0) {
+        if (tab === 'favorites') {
+            // Refresh favorites when switching to the tab
+            this.displayFavorites();
+        } else if (tab === 'notifications') {
+            this.checkNewReleases();
+        } else if (tab === 'pre-releases') {
             this.loadPreReleases();
-        } else if (tab === 'recommendations' && document.getElementById('recommendations').children.length === 0) {
-            this.loadTrackRecommendations();
-            this.loadRecommendations(); // Also load artist recommendations
         }
     }
     

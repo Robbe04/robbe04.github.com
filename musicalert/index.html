@@ -289,10 +289,6 @@
                         class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
                         <i class="fas fa-calendar-alt mr-2"></i>Evenementen
                     </button>
-                    <button id="tab-recommendations" onclick="app.switchTab('recommendations')" 
-                        class="px-4 md:px-6 py-2 md:py-3 font-medium text-gray-500 whitespace-nowrap text-sm md:text-base">
-                        <i class="fas fa-magic mr-2"></i>Aanbevelingen
-                    </button>
                 </div>
                 
                 <div class="bg-white rounded-b-xl md:rounded-b-2xl shadow-lg p-4 md:p-8">
@@ -419,24 +415,6 @@
                         
                         <div id="pre-releases" class="space-y-3 md:space-y-4"></div>
                     </div>
-                    
-                    <!-- Recommendations Section -->
-                    <div id="recommendations-content" class="tab-content hidden">
-                        <h3 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-primary">Aanbevolen Voor Jou</h3>
-                        <p class="text-sm md:text-base text-gray-600 mb-4">Gebaseerd op jouw gevolgde artiesten</p>
-                        
-                        <!-- Track Recommendations (New) -->
-                        <h4 class="font-semibold text-lg mb-3 flex items-center">
-                            <i class="fas fa-music mr-2 text-secondary"></i>Aanbevolen Tracks
-                        </h4>
-                        <div id="track-recommendations" class="mb-8"></div>
-                        
-                        <!-- Artist Recommendations (Existing) -->
-                        <h4 class="font-semibold text-lg mb-3 flex items-center mt-6">
-                            <i class="fas fa-users mr-2 text-secondary"></i>Aanbevolen Artiesten
-                        </h4>
-                        <div id="recommendations" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6"></div>
-                    </div>
                 </div>
             </div>
 
@@ -450,16 +428,20 @@
                         <i class="fab fa-spotify text-xl text-blue-500"></i>
                     </div>
                     <div class="ml-3">
-                        <h3 class="text-blue-800 font-medium text-base">Spotify Free Gebruiker?</h3>
+                        <h3 class="text-blue-800 font-medium text-base">Hoe werkt MusicAlert met Spotify?</h3>
                         <p class="text-sm mt-1">
-                            Met een gratis Spotify account kun je:
+                            MusicAlert is een muziekontdekkings-app die werkt met je Spotify account:
                             <ul class="list-disc pl-5 mt-1 text-sm">
-                                <li>Preview luisteren van 30 seconden</li>
-                                <li>Tracks opslaan voor offline beluisteren in MusicAlert</li>
-                                <li>Doorklikken naar Spotify om volledige tracks af te spelen</li>
+                                <li>Ontdek nieuwe releases van je favoriete DJ's en artiesten</li>
+                                <li>Bekijk albuminfo, tracklists en release datums</li>
+                                <li>Klik door naar Spotify om muziek af te spelen</li>
+                                <li>Volg je favoriete artiesten voor nieuwe release meldingen</li>
                             </ul>
                         </p>
-                        <p class="text-xs mt-2 text-blue-600">Je kunt op de "Offline opslaan" knop klikken bij een track om deze beschikbaar te maken in het "Offline Muziek" paneel.</p>
+                        <p class="text-xs mt-2 text-blue-600">
+                            <strong>Let op:</strong> Audio afspelen gebeurt via Spotify. Met een gratis Spotify account kun je volledige albums opslaan in je bibliotheek, maar afspelen heeft beperkingen (shuffle, advertenties). 
+                            Met Spotify Premium heb je volledige controle over afspelen.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -471,7 +453,7 @@
                 </h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Nieuwe module: Toekomstige Evenementen -->
+                    <!-- DJ Evenementen module blijft behouden -->
                     <div class="p-4 border border-gray-200 rounded-lg">
                         <h4 class="font-bold mb-2 flex items-center">
                             <i class="fas fa-calendar-alt mr-2 text-primary"></i>DJ Evenementen
@@ -482,29 +464,7 @@
                         </button>
                     </div>
                     
-                    <!-- Nieuwe module: Offline Muziek -->
-                    <div class="p-4 border border-gray-200 rounded-lg">
-                        <h4 class="font-bold mb-2 flex items-center">
-                            <i class="fas fa-headphones mr-2 text-primary"></i>Offline Luisteren
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-3">Beheer je offline opgeslagen muziek.</p>
-                        <button onclick="showOfflinePanel()" class="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition">
-                            <i class="fas fa-download mr-2"></i>Offline Muziek
-                        </button>
-                    </div>
-
-                    <!-- Nieuwe module: Gedeelde Playlists -->
-                    <div class="p-4 border border-gray-200 rounded-lg">
-                        <h4 class="font-bold mb-2 flex items-center">
-                            <i class="fas fa-users mr-2 text-primary"></i>Gedeelde Playlists
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-3">Deel playlists met vrienden of werk samen aan playlists.</p>
-                        <button onclick="showPlaylistsPanel()" class="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition">
-                            <i class="fas fa-share-alt mr-2"></i>Playlists Beheren
-                        </button>
-                    </div>
-                    
-                    <!-- Bestaande modules blijven behouden -->
+                    <!-- Import/Export module blijft behouden -->
                     <div class="p-4 border border-gray-200 rounded-lg">
                         <h4 class="font-bold mb-2 flex items-center">
                             <i class="fas fa-file-export mr-2 text-primary"></i>Import/Export
@@ -552,77 +512,12 @@
                             <i class="fas fa-check-circle mr-1"></i>App is al geïnstalleerd
                         </p>
                     </div>
-                    
-                    <div class="p-4 border border-gray-200 rounded-lg">
-                        <h4 class="font-bold mb-2 flex items-center">
-                            <i class="fas fa-chart-bar mr-2 text-primary"></i>Statistieken
-                        </h4>
-                        <p class="text-sm text-gray-600 mb-3">Bekijk je luistergeschiedenis en populaire artiesten.</p>
-                        <button onclick="app.showStatsModal()" class="w-full bg-primary hover:bg-primary-dark text-white py-2 rounded-lg transition">
-                            <i class="fas fa-chart-line mr-2"></i>Bekijk Statistieken
-                        </button>
-                    </div>
                 </div>
                 
                 <!-- Bestaande footer code -->
                 <div class="mt-6 text-center">
                     <p class="text-xs text-gray-500">MusicAlert versie 1.0.0</p>
                     <button onclick="app.resetApp()" class="text-xs text-gray-400 hover:text-red-500 mt-1 transition">Reset App</button>
-                </div>
-            </div>
-            
-            <!-- Equalizer Panel -->
-            <div class="max-w-4xl mx-auto mt-8 bg-white rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 transition-all duration-300">
-                <h3 class="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-primary flex items-center">
-                    <i class="fas fa-sliders-h mr-3 text-secondary"></i>Sound Enhancer
-                </h3>
-                
-                <div class="p-4 border border-gray-200 rounded-lg">
-                    <div class="flex flex-col space-y-4">
-                        <!-- Volume Control -->
-                        <div>
-                            <label for="volume-control" class="block text-sm font-medium text-gray-700 mb-1">Volume</label>
-                            <div class="flex items-center">
-                                <i class="fas fa-volume-down text-gray-400 mr-2"></i>
-                                <input type="range" id="volume-control" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                                       min="0" max="100" value="100" oninput="updateVolume(this.value)">
-                                <i class="fas fa-volume-up text-gray-400 ml-2"></i>
-                            </div>
-                        </div>
-                        
-                        <!-- Bass Control -->
-                        <div>
-                            <label for="bass-control" class="block text-sm font-medium text-gray-700 mb-1">Bass</label>
-                            <div class="flex items-center">
-                                <i class="fas fa-minus text-gray-400 mr-2"></i>
-                                <input type="range" id="bass-control" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                                       min="-10" max="10" value="0" oninput="updateBass(this.value)">
-                                <i class="fas fa-plus text-gray-400 ml-2"></i>
-                            </div>
-                        </div>
-                        
-                        <!-- Mid Control -->
-                        <div>
-                            <label for="mid-control" class="block text-sm font-medium text-gray-700 mb-1">Mid</label>
-                            <div class="flex items-center">
-                                <i class="fas fa-minus text-gray-400 mr-2"></i>
-                                <input type="range" id="mid-control" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                                       min="-10" max="10" value="0" oninput="updateMid(this.value)">
-                                <i class="fas fa-plus text-gray-400 ml-2"></i>
-                            </div>
-                        </div>
-                        
-                        <!-- Treble Control -->
-                        <div>
-                            <label for="treble-control" class="block text-sm font-medium text-gray-700 mb-1">Treble</label>
-                            <div class="flex items-center">
-                                <i class="fas fa-minus text-gray-400 mr-2"></i>
-                                <input type="range" id="treble-control" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" 
-                                       min="-10" max="10" value="0" oninput="updateTreble(this.value)">
-                                <i class="fas fa-plus text-gray-400 ml-2"></i>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -739,44 +634,6 @@
         </div>
     </div>
     
-    <!-- Statistics Modal -->
-    <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-md overflow-hidden animate__animated animate__fadeInUp">
-            <div class="p-4 stats-header">
-                <h3 class="font-bold flex items-center">
-                    <i class="fas fa-chart-line mr-2"></i>Luisterstatistieken
-                </h3>
-            </div>
-            
-            <div class="p-5">
-                <div id="top-artists-stats" class="mb-6">
-                    <h4 class="font-bold mb-3">Top DJ's</h4>
-                    <div id="top-artists-list" class="space-y-2">
-                        <!-- Top artists will be inserted here -->
-                    </div>
-                </div>
-                
-                <div id="recent-activity-stats" class="mb-6 border-t border-gray-200 pt-4">
-                    <h4 class="font-bold mb-3">Recent Beluisterd</h4>
-                    <div id="recent-activity-list" class="space-y-2">
-                        <!-- Recent activity will be inserted here -->
-                    </div>
-                </div>
-                
-                <div class="border-t border-gray-200 pt-4 text-center">
-                    <p class="mb-1">Totaal aantal keer afgespeeld</p>
-                    <p id="total-plays" class="text-2xl font-bold stats-count">0</p>
-                </div>
-            </div>
-            
-            <div class="p-3 border-t border-gray-200">
-                <button onclick="ui.hideStatsModal()" class="w-full text-center p-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition">
-                    Sluiten
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Events Panel Modal -->
     <div id="events-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-2xl overflow-hidden animate__animated animate__fadeInUp">
@@ -844,100 +701,6 @@
         </div>
     </div>
     
-    <!-- Offline Music Panel Modal -->
-    <div id="offline-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-2xl overflow-hidden animate__animated animate__fadeInUp">
-            <div class="p-4 bg-primary text-white">
-                <h3 class="font-bold flex items-center">
-                    <i class="fas fa-headphones mr-2"></i>Offline Muziek Beheren
-                </h3>
-            </div>
-            
-            <div class="p-5">
-                <div class="mb-4 flex items-center justify-between">
-                    <h4 class="font-bold">Opgeslagen Tracks</h4>
-                    <div>
-                        <span id="offline-storage-usage" class="text-sm bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">
-                            0 MB gebruikt
-                        </span>
-                    </div>
-                </div>
-                
-                <div id="offline-tracks-container" class="border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <div id="offline-loading" class="text-center py-6">
-                        <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
-                        <p>Offline tracks laden...</p>
-                    </div>
-                    
-                    <div id="offline-tracks-list" class="hidden divide-y divide-gray-200 dark:divide-gray-700 max-h-80 overflow-y-auto">
-                        <!-- Offline tracks will be listed here -->
-                    </div>
-                    
-                    <div id="no-offline-tracks" class="text-center py-8 hidden">
-                        <div class="text-gray-400 mb-4">
-                            <i class="fas fa-music text-5xl"></i>
-                        </div>
-                        <p class="text-gray-500">Geen offline muziek opgeslagen</p>
-                        <p class="text-gray-500 text-sm mt-2">Sla tracks op om ze offline te beluisteren</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-3 border-t">
-                <button onclick="hideOfflinePanel()" class="w-full text-center p-3 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
-                    Sluiten
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Playlists Panel Modal -->
-    <div id="playlists-panel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-xl m-4 w-full max-w-2xl overflow-hidden animate__animated animate__fadeInUp">
-            <div class="p-4 bg-primary text-white">
-                <h3 class="font-bold flex items-center">
-                    <i class="fas fa-users mr-2"></i>Gedeelde Playlists
-                </h3>
-            </div>
-            
-            <div class="p-5">
-                <div class="flex justify-between items-center mb-4">
-                    <h4 class="font-bold">Jouw Playlists</h4>
-                    <button id="create-playlist-btn" class="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-lg text-sm transition">
-                        <i class="fas fa-plus mr-1"></i>Nieuwe Playlist
-                    </button>
-                </div>
-                
-                <div id="playlists-container">
-                    <div id="playlists-loading" class="text-center py-6">
-                        <i class="fas fa-spinner fa-spin text-3xl text-primary mb-3"></i>
-                        <p>Playlists laden...</p>
-                    </div>
-                    
-                    <div id="playlists-list" class="hidden space-y-3">
-                        <!-- Playlists will be listed here -->
-                    </div>
-                    
-                    <div id="no-playlists" class="text-center py-8 hidden">
-                        <div class="text-gray-400 mb-4">
-                            <i class="fas fa-list-ul text-5xl"></i>
-                        </div>
-                        <p class="text-gray-500">Je hebt nog geen playlists gemaakt</p>
-                        <p class="text-gray-500 text-sm mt-2">Maak je eerste playlist om muziek te delen</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-3 border-t">
-                <button onclick="hidePlaylistsPanel()" class="w-full text-center p-3 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
-                    Sluiten
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Overige bestaande modals blijven behouden -->
-    
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
         <div class="bg-white dark:bg-gray-800 p-8 rounded-lg flex flex-col items-center">
@@ -987,15 +750,20 @@
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/notifications.js"></script>
+    
+    <!-- UI Modules - NIEUWE MODULES -->
+    <script src="ui/gevolgde_djs.js"></script>
+    <script src="ui/nieuwe_releases.js"></script>
+    <script src="ui/aankomende_releases.js"></script>
+    <script src="ui/evenementen.js"></script>
+    
     <script src="js/app.js"></script>
-    <script src="js/audio-enhancer.js"></script>
     <script src="js/events-manager.js"></script>
-    <script src="js/stats-analyzer.js"></script>
     <script src="js/social-sharing.js"></script>
     
     <!-- Script for new modules UI integration -->
     <script>
-        // Events panel functions
+        // Events panel functions - KEEP ONLY EVENTS FUNCTIONS
         function showEventsPanel() {
             const panel = document.getElementById('events-panel');
             const eventsList = document.getElementById('events-list');
@@ -1217,248 +985,10 @@
                     return { label: status, bgColor: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' };
             }
         }
-        
-        // ...existing code...
-    </script>
-
-    <!-- Add initialization for audio preview functionality -->
-    <script>
-        // Initialize click handlers for any track preview buttons
-        document.addEventListener('click', function(e) {
-            // Check if clicked element is a preview button or has a parent that is
-            const previewButton = e.target.closest('.preview-play-btn');
-            
-            if (previewButton) {
-                // Preview button handling is managed by the event listeners added in UI service
-                // This is just to ensure we have global event delegation if needed
-            }
-        });
-        
-        // Global key shortcuts for preview player
-        document.addEventListener('keydown', function(e) {
-            const previewPlayer = document.getElementById('preview-player');
-            
-            if (previewPlayer) {
-                // Space bar to play/pause
-                if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
-                    e.preventDefault(); // Prevent page scrolling
-                    
-                    if (previewPlayer.paused) {
-                        previewPlayer.play();
-                        document.getElementById('preview-play-pause').innerHTML = '<i class="fas fa-pause"></i>';
-                    } else {
-                        previewPlayer.pause();
-                        document.getElementById('preview-play-pause').innerHTML = '<i class="fas fa-play"></i>';
-                    }
-                }
-                
-                // Escape key to close player
-                if (e.code === 'Escape') {
-                    ui.stopCurrentPreview();
-                }
-            }
-        });
     </script>
     
-    <!-- Functions for playlist handling -->
+    <!-- Utility functions -->
     <script>
-        function loadPlaylists() {
-            try {
-                const sharedPlaylists = socialSharing.sharedPlaylists;
-                const collaborativePlaylists = socialSharing.collaborativePlaylists;
-                
-                setTimeout(() => {
-                    // Hide loading indicator
-                    document.getElementById('playlists-loading').classList.add('hidden');
-                    
-                    if ((!sharedPlaylists || sharedPlaylists.length === 0) && 
-                        (!collaborativePlaylists || collaborativePlaylists.length === 0)) {
-                        // No playlists found
-                        document.getElementById('no-playlists').classList.remove('hidden');
-                    } else {
-                        // Display playlists
-                        displayPlaylists(sharedPlaylists, collaborativePlaylists);
-                        document.getElementById('playlists-list').classList.remove('hidden');
-                    }
-                }, 1000); // Simulate loading time
-            } catch (error) {
-                console.error('Error loading playlists:', error);
-                document.getElementById('playlists-loading').classList.add('hidden');
-                document.getElementById('no-playlists').classList.remove('hidden');
-            }
-        }
-        
-        function displayPlaylists(sharedPlaylists, collaborativePlaylists) {
-            const playlistsList = document.getElementById('playlists-list');
-            playlistsList.innerHTML = '';
-            
-            // Display collaborative playlists first
-            if (collaborativePlaylists && collaborativePlaylists.length > 0) {
-                const collabTitle = document.createElement('h5');
-                collabTitle.className = 'font-medium mb-2';
-                collabTitle.textContent = 'Samenwerkingsplaylists';
-                playlistsList.appendChild(collabTitle);
-                
-                collaborativePlaylists.forEach(playlist => {
-                    const playlistElement = createPlaylistElement(playlist, true);
-                    playlistsList.appendChild(playlistElement);
-                });
-            }
-            
-            // Display shared playlists
-            if (sharedPlaylists && sharedPlaylists.length > 0) {
-                if (collaborativePlaylists && collaborativePlaylists.length > 0) {
-                    const divider = document.createElement('div');
-                    divider.className = 'my-4 border-t border-gray-200 dark:border-gray-700';
-                    playlistsList.appendChild(divider);
-                }
-                
-                const sharedTitle = document.createElement('h5');
-                sharedTitle.className = 'font-medium mb-2';
-                sharedTitle.textContent = 'Gedeelde Playlists';
-                playlistsList.appendChild(sharedTitle);
-                
-                sharedPlaylists.forEach(playlist => {
-                    const playlistElement = createPlaylistElement(playlist, false);
-                    playlistsList.appendChild(playlistElement);
-                });
-            }
-        }
-        
-        function createPlaylistElement(playlist, isCollaborative) {
-            const playlistElement = document.createElement('div');
-            playlistElement.className = 'bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md';
-            
-            const createdDate = new Date(playlist.createdAt).toLocaleDateString('nl-NL');
-            
-            playlistElement.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h5 class="font-bold">${playlist.name}</h5>
-                        <p class="text-sm text-gray-600 dark:text-gray-300">${playlist.tracks.length} tracks</p>
-                    </div>
-                    <div>
-                        ${isCollaborative ? 
-                            `<span class="text-xs bg-primary bg-opacity-20 dark:bg-opacity-30 text-primary-dark dark:text-primary-light px-2 py-1 rounded-full">
-                                Samenwerking
-                            </span>` : 
-                            `<span class="text-xs bg-secondary bg-opacity-20 dark:bg-opacity-30 text-secondary-dark dark:text-secondary-light px-2 py-1 rounded-full">
-                                Gedeeld
-                            </span>`
-                        }
-                    </div>
-                </div>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Aangemaakt: ${createdDate}</p>
-                ${playlist.description ? `<p class="text-sm mt-2">${playlist.description}</p>` : ''}
-                <div class="mt-3 flex justify-between">
-                    <div>
-                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-eye mr-1"></i>${playlist.views || 0} keer bekeken
-                        </span>
-                    </div>
-                    <div>
-                        <button onclick="sharePlaylist('${playlist.id}')" class="p-1 text-blue-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition mr-1">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button onclick="viewPlaylist('${playlist.id}')" class="p-1 text-primary hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button onclick="deletePlaylist('${playlist.id}')" class="p-1 text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            return playlistElement;
-        }
-        
-        function sharePlaylist(playlistId) {
-            try {
-                const playlist = socialSharing.getSharedPlaylist(playlistId);
-                if (playlist) {
-                    socialSharing.sharePlaylist(playlist)
-                        .then(success => {
-                            if (success) {
-                                ui.showMessage('Playlist succesvol gedeeld!', 'success');
-                            } else {
-                                ui.showMessage('Kon playlist niet delen', 'error');
-                            }
-                        });
-                }
-            } catch (error) {
-                console.error('Error sharing playlist:', error);
-                ui.showMessage('Fout bij delen playlist', 'error');
-            }
-        }
-        
-        function viewPlaylist(playlistId) {
-            try {
-                const playlist = socialSharing.getSharedPlaylist(playlistId);
-                if (playlist) {
-                    // In a real app, you would show the playlist details
-                    ui.showMessage(`Bekijk playlist: ${playlist.name}`, 'info');
-                }
-            } catch (error) {
-                console.error('Error viewing playlist:', error);
-                ui.showMessage('Kan playlist niet weergeven', 'error');
-            }
-        }
-        
-        function deletePlaylist(playlistId) {
-            // This would be implemented in a real app
-            ui.showMessage('Playlist verwijderen is nog niet geïmplementeerd', 'info');
-        }
-        
-        function showCreatePlaylistForm() {
-            // This would be implemented in a real app
-            ui.showMessage('Playlist maken is nog niet geïmplementeerd', 'info');
-        }
-    </script>
-    
-    <!-- Sound enhancer functions -->
-    <script>
-        function updateVolume(value) {
-            try {
-                const volume = parseInt(value) / 100; // Convert to 0-1 range
-                audioEnhancer.setVolume(volume);
-                ui.showMessage(`Volume ingesteld op ${value}%`, 'info');
-            } catch (error) {
-                console.error('Error updating volume:', error);
-            }
-        }
-        
-        function updateBass(value) {
-            try {
-                const bassValue = parseInt(value);
-                audioEnhancer.setEqualizerBand('bass', bassValue);
-                ui.showMessage(`Bass ingesteld op ${value}`, 'info');
-            } catch (error) {
-                console.error('Error updating bass:', error);
-            }
-        }
-        
-        function updateMid(value) {
-            try {
-                const midValue = parseInt(value);
-                audioEnhancer.setEqualizerBand('mid', midValue);
-                ui.showMessage(`Mid ingesteld op ${value}`, 'info');
-            } catch (error) {
-                console.error('Error updating mid:', error);
-            }
-        }
-        
-        function updateTreble(value) {
-            try {
-                const trebleValue = parseInt(value);
-                audioEnhancer.setEqualizerBand('treble', trebleValue);
-                ui.showMessage(`Treble ingesteld op ${value}`, 'info');
-            } catch (error) {
-                console.error('Error updating treble:', error);
-            }
-        }
-        
-        // Utility functions
         function getRelativeTime(date) {
             const now = new Date();
             const diffInDays = Math.floor((date - now) / (1000 * 60 * 60 * 24));
@@ -1477,38 +1007,6 @@
                 return `Over ${months} ${months === 1 ? 'maand' : 'maanden'}`;
             }
         }
-    </script>
-    
-    <!-- Initialize audio preview functionality -->
-    <script>
-        // Initialize click handlers for any track preview buttons
-        document.addEventListener('click', function(e) {
-            // Check if clicked element is a preview button or has a parent that is
-            const previewButton = e.target.closest('.preview-play-btn');
-            
-            if (previewButton) {
-                // Preview button handling is managed by the event listeners added in UI service
-                // This is just to ensure we have global event delegation if needed
-            }
-        });
-    </script>
-
-    <!-- Update the mobile display structure in pre-releases -->
-    <script>
-        // Make sure loading states use consistent colors
-        function updateLoadingDisplay() {
-            // Add loading-spinner class to all loading spinners
-            document.querySelectorAll('.fa-spinner.fa-spin').forEach(spinner => {
-                spinner.classList.add('loading-spinner');
-            });
-        }
-        
-        // Run on page load
-        document.addEventListener('DOMContentLoaded', updateLoadingDisplay);
-        
-        // Also run when the DOM changes
-        const observer = new MutationObserver(updateLoadingDisplay);
-        observer.observe(document.body, { childList: true, subtree: true });
     </script>
 </body>
 </html>
