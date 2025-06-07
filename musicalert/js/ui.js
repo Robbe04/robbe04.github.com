@@ -561,7 +561,7 @@ class UIService {
         if (!toast) {
             toast = document.createElement('div');
             toast.id = 'toast';
-            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white shadow-lg transition-opacity duration-300 z-50 opacity-0';
+            toast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-white shadow-lg transition-opacity duration-300 z-50 opacity-0 max-w-sm text-center text-sm';
             document.body.appendChild(toast);
         }
         
@@ -580,11 +580,11 @@ class UIService {
         // Toon toast
         setTimeout(() => toast.classList.add('opacity-100'), 10);
         
-        // Verberg toast na 3 seconden
+        // Verberg toast na 4 seconden (iets langer voor langere berichten)
         setTimeout(() => {
             toast.classList.remove('opacity-100');
             setTimeout(() => toast.classList.add('opacity-0'), 300);
-        }, 3000);
+        }, 4000);
     }
 
     /**

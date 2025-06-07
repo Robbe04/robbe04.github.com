@@ -413,12 +413,10 @@ class MusicAlertApp {
      * @param {boolean} background - Whether this is a background check
      */
     async checkNewReleases(background = false) {
-        // Debug logging
         console.log('checkNewReleases called, background:', background);
         console.log('nieuweReleasesUI available:', !!window.nieuweReleasesUI);
         
         if (!this.favorites.length) {
-            // Controleer of de module geladen is
             if (window.nieuweReleasesUI) {
                 try {
                     window.nieuweReleasesUI.displayNotifications([]);
@@ -433,7 +431,6 @@ class MusicAlertApp {
         
         try {
             if (!background) {
-                // Show loading skeletons instead of basic loading
                 if (window.nieuweReleasesUI) {
                     try {
                         window.nieuweReleasesUI.showLoadingSkeletons();
@@ -441,7 +438,17 @@ class MusicAlertApp {
                         console.error('Error in showLoadingSkeletons:', error);
                     }
                 }
-                ui.showLoading('Nieuwe releases controleren...');
+                
+                // Check if we're using cached data
+                const cacheExpiry = localStorage.getItem('new-releases-cache-expiry');
+                const isUsingCache = cacheExpiry && parseInt(cacheExpiry) > Date.now();
+                
+                if (isUsingCache) {
+                    const nextMidnight = new Date(parseInt(cacheExpiry));
+                    ui.showLoading(`Nieuwe releases (cached tot ${nextMidnight.toLocaleTimeString('nl-NL')})`);
+                } else {
+                    ui.showLoading('Nieuwe releases controleren...');
+                }
             }
             
             // Pass the releaseAgeDays parameter to the API call
@@ -455,7 +462,6 @@ class MusicAlertApp {
             // Only update UI if not a background check
             if (!background) {
                 console.log(`Displaying ${newReleases.length} new releases in the UI`);
-                // Controleer of de module geladen is
                 if (window.nieuweReleasesUI) {
                     try {
                         window.nieuweReleasesUI.displayNotifications(newReleases);
@@ -467,9 +473,19 @@ class MusicAlertApp {
                 }
                 ui.hideLoading();
                 
-                // Show success notification
+                // Show appropriate success notification
+                const cacheExpiry = localStorage.getItem('new-releases-cache-expiry');
+                const isUsingCache = cacheExpiry && parseInt(cacheExpiry) > Date.now();
+                
                 if (newReleases.length > 0) {
-                    ui.showMessage(`${newReleases.length} nieuwe release${newReleases.length === 1 ? '' : 's'} gevonden!`, 'success');
+                    if (isUsingCache) {
+                        const nextMidnight = new Date(parseInt(cacheExpiry));
+                        ui.showMessage(`${newReleases.length} nieuwe release${newReleases.length === 1 ? '' : 's'} (cached tot ${nextMidnight.toLocaleTimeString('nl-NL')})`, 'success');
+                    } else {
+                        ui.showMessage(`${newReleases.length} nieuwe release${newReleases.length === 1 ? '' : 's'} gevonden!`, 'success');
+                    }
+                } else if (!isUsingCache) {
+                    ui.showMessage('Geen nieuwe releases gevonden', 'info');
                 }
             }
             
@@ -482,6 +498,21 @@ class MusicAlertApp {
             console.error('Error checking new releases:', error);
             return [];
         }
+    }
+    
+    /**
+     * Force refresh new releases (bypass cache)
+     */
+    forceRefreshNewReleases() {
+        // Clear the cache to force fresh fetch
+        localStorage.removeItem('new-releases-cache');
+        localStorage.removeItem('new-releases-cache-expiry');
+        
+        // Show message
+        ui.showMessage('Cache geleegd - nieuwe releases worden opnieuw opgehaald', 'info');
+        
+        // Refresh the data
+        this.checkNewReleases();
     }
 
     /**
